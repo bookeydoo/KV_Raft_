@@ -9,8 +9,4 @@ g++ -std=c++20 -O2 -Wall -pthread  Server.cpp  Node.cpp ClientSession.cpp  -o ra
 ```
 
 ## Whats next?
-<<<<<<< HEAD
 Aiming to add a multistage build process with gcc next to test it better with separate containers ان شاء الله
-=======
-Aiming to add a multistage build process with gcc next to test it better with separate containers ان شاء الله
->>>>>>> ef157b6138a03ba801472581134b8a833b146593
