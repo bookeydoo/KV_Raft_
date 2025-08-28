@@ -1,0 +1,193 @@
+#include"Node.hpp"
+#include"ClientSession.hpp"
+
+using namespace boost::asio::ip;
+using Socket = tcp::socket;
+
+
+class Node;
+
+
+   ClientSession::ClientSession(std::shared_ptr<Socket> Socket,
+                             std::shared_ptr<boost::asio::streambuf> Buffer,
+                             std::shared_ptr<Node> Parent)
+        : socket(std::move(Socket)), buffer(std::move(Buffer)), Parent_node(Parent) {}
+    
+
+    void ClientSession::start(bool isLeader) {
+        do_read(isLeader); // Start the first asynchronous read operation 
+    }
+
+    std::shared_ptr<Socket> ClientSession::get_socket() { return socket; }  
+
+    void ClientSession::do_read(bool isLeader ) {
+        // Use a shared pointer to the session to keep it alive
+        auto self(shared_from_this());
+        bool Leaderstate=isLeader;
+
+        boost::asio::async_read_until(*socket,*buffer, '\n',
+            [this, self,Leaderstate](boost::system::error_code ec, size_t bytes_transferred) {
+                if (!ec) {
+                    std::istream is(buffer.get());
+                    std::string line;
+                    std::getline(is, line);
+
+                    auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                    auto parent_node=Parent_node.lock();
+
+                    if(line.find("AppendEntries") != std::string::npos){
+
+                        //Leader heartbeat 
+                        parent_node->Reset_election_timer();
+                        
+                        size_t term_Pos=line.find("term:")+5;
+                        std::string term_str=line.substr(term_Pos);
+                        int term=std::stoi(term_str);
+
+                        if(term>parent_node->Curr_Term){
+                            parent_node->Curr_Term=term;
+                            parent_node->isFollower=true;
+                            parent_node->isCandidate=false;
+                            parent_node->isLeader=false;
+                        }
+                        
+                    
+                      
+                        std::string AppendEntry=line;
+                        if(!AppendEntry.empty()){
+                            //append
+                            parent_node->handleAppendEntry(AppendEntry);
+                        }
+
+                    }
+                    if(line.find("DeleteEntries")!= std::string::npos){
+                        parent_node->Reset_election_timer();
+
+                        std::string DeleteEntry=line;
+                           if(!DeleteEntry.empty()){
+                            //append
+                            parent_node->handleDeleteEntry(DeleteEntry);
+                        }
+
+                    }
+                    if(line.starts_with("RequestVote")){
+
+                         size_t term_Pos=line.find("term:")+5;
+                        std::string term_str=line.substr(term_Pos);
+                        int term=std::stoi(term_str);
+
+                        if(term>parent_node->Curr_Term){
+                            parent_node->Curr_Term=term;
+                            parent_node->isFollower=true;
+                            parent_node->isCandidate=false;
+                            parent_node->isLeader=false;
+                        }
+                        
+                        parent_node->handleVoteReq(line);
+                    }
+
+
+                
+                    std::cerr << "Received: " << line << " from "
+                              << socket->remote_endpoint()<< "at"
+                              << std::ctime(&now) << "\n";
+
+                    // Continue reading from the same client
+                    do_read(Leaderstate);
+                } else {
+                    std::cerr << "Read error: " << ec.message() << "\n";
+                    // Error occurred, the session can be closed or handle the error
+                }
+            });
+    }
+
+
+
+
+ 
+     void ApiSession::parseHttpRequest(const std::string & Raw_req, std::string& method,std::string& path,
+        std::map<std::string,std::string>& headers, std::string & body){
+        
+        std::istringstream stream(Raw_req);
+        std::string line;
+
+        if(std::getline(stream,line)){
+            std::istringstream request_line(line);
+            request_line>>method>>path;
+        }
+
+        //parsing headers  
+        //ex:  host: localhost:8080\r\n
+
+        while(std::getline(stream,line)&& line !="\r"){
+            auto colon= line.find(":");
+            if(colon !=std::string::npos){ //npos means there was an error finding keyword or the string ended
+                std::string key=line.substr(0,colon);
+                std::string value=line.substr(colon+1);
+                //trim space+ \r
+                key.erase(key.find_last_not_of(" \r\n")+1);
+                value.erase(0,value.find_first_not_of(" "));
+                value.erase(value.find_last_not_of(" \r\n")+1);
+                headers[key]=value;
+            }
+        }
+
+        // Body (everything left in the stream)
+        
+        std::ostringstream body_stream;
+        body_stream << stream.rdbuf();
+        body = body_stream.str();
+        // trim \r\n at the end
+        if (!body.empty() && body.back() == '\n') body.pop_back();
+        if (!body.empty() && body.back() == '\r') body.pop_back();
+
+    }
+
+
+    void ApiSession::Handle_Req(){
+
+        auto self(shared_from_this());
+        boost::asio::async_read_until(*socket,*buffer, '\n',
+            [this,self](boost::system::error_code ec, size_t bytes_transferred) 
+            {
+                if (!ec) {
+                    std::istream request_stream(buffer.get());
+                    std::string raw_request((std::istreambuf_iterator<char>(request_stream)),std::istreambuf_iterator<char>());
+
+                    std::string method,path,body;
+                    std::map<std::string,std::string> Headers;
+                    
+                    parseHttpRequest(raw_request,method,path,Headers,body);
+
+                    auto parent =Parent_node.lock();
+                    if(method=="POST"&& path=="/kv"){
+                        std::string key,value;
+                        size_t key_pos   = body.find("key=");
+                        size_t value_pos = body.find("value=");
+                        if (key_pos != std::string::npos && value_pos != std::string::npos) {
+                            key = body.substr(key_pos + 4, body.find('&') - (key_pos + 4));
+                            value = body.substr(value_pos + 6);
+                            parent->AddtoLog(1,key,value,parent->Curr_Term);
+                        }
+                    }
+                    if(method=="GET" && path.rfind("/kv",0)==0){
+                        auto query_pos = path.find('?');
+                        if (query_pos != std::string::npos) {
+                            std::string query = path.substr(query_pos + 1);
+                            size_t eq = query.find('=');
+                            if (eq != std::string::npos && query.substr(0, eq) == "key") {
+                                std::string key = query.substr(eq + 1);
+                                auto val = parent->getLogEntry(key);
+                                std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n" + val->value;
+                                parent->TransmitMsg(response,self->get_socket());
+                            }
+                        }
+                    }
+                }
+            });
+
+    }   
+
+
+
+
