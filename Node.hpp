@@ -59,7 +59,6 @@ private:
     boost::asio::steady_timer Heartbeat_timer;
     std::vector<std::shared_ptr<ClientSession>> Sessions;  //internally have sockets (non copyable) 
     std::vector<std::shared_ptr<tcp::acceptor>> acceptors;  //non copyable , wont build if emplaced directly in a vec 
-    std::map<std::string,Logstruct> Log;
     
     //for random timeouts
     std::mt19937 rng{std::random_device{}()};
@@ -72,11 +71,15 @@ public:
     bool isLeader=false;
     bool isFollower=true;
     bool isCandidate=false;
+    tcp::endpoint Curr_leader;
+    std::map<std::string,Logstruct> Log;
+   
 
 
     Node(boost::asio::io_context& ctx,int Port);
                     
-    
+      //this is used to access the endpoints of the node sessions (non api)
+    const std::vector<std::shared_ptr<ClientSession>>& getSessions() const ;
     
     void Start_Server();
     
@@ -87,8 +90,8 @@ public:
 
     void TransmitMsg(std::string &Msg,std::shared_ptr<Socket>sock);
 
-    void BroadcastMsg(std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets);
-    void BroadcastMsg(std::string &Msg,std::vector<std::shared_ptr<ClientSession>>& Sessions);
+    void BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets);
+    void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) const ;
 
 
     //--------------------------------------------------------------------------------------------------------------------------

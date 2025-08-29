@@ -33,40 +33,57 @@ class Node;
                     std::getline(is, line);
 
                     auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-                    auto parent_node=Parent_node.lock();
+                    auto parent=Parent_node.lock();
 
                     if(line.find("AppendEntries") != std::string::npos){
-
+                       
+                        if(!parent || parent->isLeader){
+                            //leader shouldn't accept append from non_leaders
+                            return ;
+                        }
                         //Leader heartbeat 
-                        parent_node->Reset_election_timer();
-                        
+                        parent->Reset_election_timer();
+
                         size_t term_Pos=line.find("term:")+5;
                         std::string term_str=line.substr(term_Pos);
                         int term=std::stoi(term_str);
 
-                        if(term>parent_node->Curr_Term){
-                            parent_node->Curr_Term=term;
-                            parent_node->isFollower=true;
-                            parent_node->isCandidate=false;
-                            parent_node->isLeader=false;
+                        if(term <parent->Curr_Term){
+                            std::string Msg=std::format("AppendEntries_Fail leader: {}:{},term:{}",
+                            parent->Curr_leader.address().to_string()
+                            ,parent->Curr_leader.port()
+                            ,parent->Curr_Term);
+                            parent->TransmitMsg(Msg,self->socket);
+                        }
+
+                        if(term>parent->Curr_Term){
+                            parent->Curr_Term=term;
+                            parent->isFollower=true;
+                            parent->isCandidate=false;
+                            parent->isLeader=false;
+                            parent->Curr_leader=this->get_socket()->local_endpoint();
                         }
                         
-                    
-                      
+                        
                         std::string AppendEntry=line;
                         if(!AppendEntry.empty()){
                             //append
-                            parent_node->handleAppendEntry(AppendEntry);
+                            parent->handleAppendEntry(AppendEntry);
                         }
-
                     }
+
+                    // std::format("PassAppend:key:{},value:{}",key,value);
+                    if(line.find("PassAppend")!= std::string::npos){
+                        parent->handlePassAppend(line);
+                    }
+
                     if(line.find("DeleteEntries")!= std::string::npos){
-                        parent_node->Reset_election_timer();
+                        parent->Reset_election_timer();
 
                         std::string DeleteEntry=line;
                            if(!DeleteEntry.empty()){
                             //append
-                            parent_node->handleDeleteEntry(DeleteEntry);
+                            parent->handleDeleteEntry(DeleteEntry);
                         }
 
                     }
@@ -76,14 +93,14 @@ class Node;
                         std::string term_str=line.substr(term_Pos);
                         int term=std::stoi(term_str);
 
-                        if(term>parent_node->Curr_Term){
-                            parent_node->Curr_Term=term;
-                            parent_node->isFollower=true;
-                            parent_node->isCandidate=false;
-                            parent_node->isLeader=false;
+                        if(term>parent->Curr_Term){
+                            parent->Curr_Term=term;
+                            parent->isFollower=true;
+                            parent->isCandidate=false;
+                            parent->isLeader=false;
                         }
                         
-                        parent_node->handleVoteReq(line);
+                        parent->handleVoteReq(line);
                     }
 
 
@@ -167,9 +184,20 @@ class Node;
                         if (key_pos != std::string::npos && value_pos != std::string::npos) {
                             key = body.substr(key_pos + 4, body.find('&') - (key_pos + 4));
                             value = body.substr(value_pos + 6);
-                            parent->AddtoLog(1,key,value,parent->Curr_Term);
+                            if(parent->isLeader){
+                                parent->Log.emplace(key, Logstruct(value, parent->Curr_Term));
+                                const std::string Msg=std::format("AppendEntries key:\"{}\",value:\"{}\",term:{}", key, value, parent->Curr_Term);
+                                parent->BroadcastMsg(Msg,parent->getSessions());
+                            }else{
+                                auto sessions=parent->getSessions();
+                                std::string Msg=std::format("PassAppend:Key:{},Value{}",key,value);
+                                for(auto &session : sessions){
+                                    if(parent->Curr_leader==session->get_socket()->local_endpoint()){
+                                        parent->TransmitMsg(Msg,session->get_socket());
+                                    }
+                                }
+                            }
                         }
-                    }
                     if(method=="GET" && path.rfind("/kv",0)==0){
                         auto query_pos = path.find('?');
                         if (query_pos != std::string::npos) {
@@ -184,6 +212,7 @@ class Node;
                         }
                     }
                 }
+            }
             });
 
     }   

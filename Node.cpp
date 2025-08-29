@@ -30,7 +30,10 @@ Node::Node(boost::asio::io_context& ctx,int Port)
                         }
 
                     }
-                    
+//this is used to access the endpoints of the node sessions (non api)
+    const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{ 
+        return Sessions;    
+    } 
     
     
 void Node::Start_Server(){
@@ -148,7 +151,7 @@ void Node::Start_Server(){
     }
     
 
-    void Node::BroadcastMsg(std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets){
+    void Node::BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets){
         auto msg=std::make_shared<std::string>(Msg);
 
         for(auto& socket: sockets){
@@ -170,7 +173,7 @@ void Node::Start_Server(){
     }
 
 
-     void BroadcastMsg(std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions){
+     void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) {
         auto msg=std::make_shared<std::string>(Msg);
 
         for(auto& session: Sessions){
