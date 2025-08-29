@@ -170,6 +170,29 @@ void Node::Start_Server(){
     }
 
 
+     void BroadcastMsg(std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions){
+        auto msg=std::make_shared<std::string>(Msg);
+
+        for(auto& session: Sessions){
+            auto socket_ptr=session->get_socket();
+            if(socket_ptr && socket_ptr->is_open()){
+                boost::asio::async_write(
+                *socket_ptr,
+                boost::asio::buffer(*msg),
+                [msg,socket_ptr](boost::system::error_code  ec, size_t bytes_transferred){
+                    if(ec){
+                        std::cerr<<"Failed to send"<<ec.message()<<"\n";
+                    }
+                    else{
+                        std::cerr<<"Sent:"<<bytes_transferred
+                                 <<"bytes\n" ;
+                    }
+                });
+            }
+        }
+    }
+
+
 
     //--------------------------------------------------------------------------------------------------------------------------
     //-----------------------Creating stuff for the Node 
