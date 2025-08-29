@@ -1,7 +1,8 @@
 # Features
+- Most features of a Raft consensus algorithm
 - Http api for GET and POST to add to the network 
 - Persists state in case of Node failures
-- Election between nodes in case of inability to reach other leader
+- Election between nodes in case of inability to reach leader
 
 ## How to build
 
