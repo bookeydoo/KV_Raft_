@@ -398,6 +398,21 @@ void Node::Start_Server(){
         AddtoLog(1,key,value,term);
     }
 
+     void Node::handlePassAppend(std::string Entry){
+        std::string key,value;
+        size_t key_start_pos = Entry.find("key:")+4;
+        size_t key_end_pos = Entry.find(",value:", key_start_pos);
+
+        key = Entry.substr(key_start_pos, key_end_pos - key_start_pos);
+
+        size_t value_start_pos=key_end_pos+7; //,value:
+
+        value=Entry.substr(value_start_pos);
+
+        Log.emplace(key,Logstruct(value,Curr_Term));
+        AddtoLog(1,key,value,Curr_Term);
+    }
+
     void Node::handleDeleteEntry(std::string DeleteEntry){
         std::string key,value;
         int term;

@@ -136,7 +136,7 @@ public:
     //AppendEntry: key:"",value:"", term:n
     void handleAppendEntry(std::string AppendEntry);
        
-    
+    void handlePassAppend(std::string Entry);
 
     void handleDeleteEntry(std::string DeleteEntry);
 
