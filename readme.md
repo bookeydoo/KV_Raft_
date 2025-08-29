@@ -11,7 +11,7 @@ g++ -std=c++20 -O2 -Wall -pthread  Server.cpp  Node.cpp ClientSession.cpp  -o ra
 
 ## How to use?
 
-You run the program with the base port but for now , you should have it use one of default port(65531 ,65532,65533)
+You run the program with the base port for now , you should have it use one of default port(65531 ,65532,65533)
 
 If you run the program without an ip , it will initalize to base_port which is 65531 and will attempt connecting to default ip nodes(65532,65533)
 
