@@ -91,7 +91,7 @@ public:
     void TransmitMsg(std::string &Msg,std::shared_ptr<Socket>sock);
 
     void BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets);
-    void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) const ;
+    void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions)const ;
 
 
     //--------------------------------------------------------------------------------------------------------------------------

@@ -173,7 +173,7 @@ void Node::Start_Server(){
     }
 
 
-     void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) {
+     void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) const{
         auto msg=std::make_shared<std::string>(Msg);
 
         for(auto& session: Sessions){
