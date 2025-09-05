@@ -43,7 +43,7 @@ class Node : public std::enable_shared_from_this<Node>{
 private:
     std::fstream LogStream;
     tcp::acceptor acceptor;  //non copyable , wont build if emplaced directly in a vec 
-    std::vector<Peer> Peers; 
+    std::vector<std::shared_ptr<Peer>> Peers; 
     std::vector<Candidate> candidates;
     boost::asio::io_context &IO_ctx;    
     boost::asio::steady_timer election_timer;

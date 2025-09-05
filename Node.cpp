@@ -45,10 +45,12 @@ void Node::Start_Server(){
             std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
             
 
-            for(size_t i=0;i<2;i++){
-                auto buf=std::make_shared<boost::asio::streambuf>();
+            for(size_t i=0;i<Endpoints.size();i++){
 
-                Peers.emplace_back(Peer{Sockets[i],Endpoints[i]});
+                if(Endpoints[i].port() == port) continue;
+                auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
+                Peers.emplace_back(peer);
+                Connect_Peer(peer);
             }
             
 
@@ -73,11 +75,6 @@ void Node::Start_Server(){
 
             std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
             
-
-            for(auto& peer:Peers){
-                auto p=std::make_shared<Peer>(peer);
-                Connect_Peer(p);
-            }
 
             
 
