@@ -42,13 +42,13 @@ struct Peer {
 class Node : public std::enable_shared_from_this<Node>{
 private:
     std::fstream LogStream;
+    tcp::acceptor acceptor;  //non copyable , wont build if emplaced directly in a vec 
     std::vector<Peer> Peers; 
     std::vector<Candidate> candidates;
     boost::asio::io_context &IO_ctx;    
     boost::asio::steady_timer election_timer;
     boost::asio::steady_timer Heartbeat_timer;
     std::vector<std::shared_ptr<ClientSession>> Sessions;  //internally have sockets (non copyable) 
-    std::vector<std::shared_ptr<tcp::acceptor>> acceptors;  //non copyable , wont build if emplaced directly in a vec 
     
     //for random timeouts
     std::mt19937 rng{std::random_device{}()};
@@ -73,7 +73,7 @@ public:
     
     void Start_Server();
     
-    void do_accept(tcp::acceptor& acceptor);
+    void do_accept();
 
     void Connect_Peer(std::shared_ptr<Peer> peer);
     
@@ -91,8 +91,8 @@ public:
     std::vector<std::shared_ptr<Socket>> CreateSockets( boost::asio::io_context &IO_ctx);
 
     //we can change no. of endpoints depending on number of nodes
-    std::vector<tcp::endpoint> CreateEndpoints(short port);
-
+    tcp::endpoint CreateEndpoint(short port);
+    std::vector<tcp::endpoint>CreateEndpoints(short port);
 
     int generate_random_timeout_ms();
 

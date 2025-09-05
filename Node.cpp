@@ -14,12 +14,12 @@ using Socket = tcp::socket;
 
 
 
-int base_port = 65531;
+int base_port = 4900;
 
 
 
 Node::Node(boost::asio::io_context& ctx,int Port)
-                :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx)
+                :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx),acceptor(ctx)
                 {
                         std::stringstream filename;
                         filename<<port<<".txt";
@@ -45,12 +45,11 @@ void Node::Start_Server(){
             std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
             
 
-            for(size_t i=0;i<3;i++){
+            for(size_t i=0;i<2;i++){
                 auto buf=std::make_shared<boost::asio::streambuf>();
 
                 Peers.emplace_back(Peer{Sockets[i],Endpoints[i]});
                 Sessions.emplace_back(std::make_shared<ClientSession>(Sockets[i],buf,shared_from_this()));
-                acceptors.emplace_back(std::make_shared<tcp::acceptor>(this->IO_ctx,Endpoints[i]));
             }
             
 
@@ -58,13 +57,29 @@ void Node::Start_Server(){
             //for each node(port) we are listening to we need to create a unique acceptor
             //on each unique acceptor object , we run async accept and io_ctx manages them
 
-            for(auto& acceptor:acceptors){
-                do_accept(*acceptor);
-            }
-
             auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::cerr<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
             
+
+            
+            
+
+            auto NodeEndpoint=CreateEndpoint(port);
+            acceptor.open(NodeEndpoint.protocol());
+            acceptor.set_option(boost::asio::socket_base::reuse_address(true));
+            acceptor.bind(NodeEndpoint);
+            acceptor.listen();
+
+            do_accept();
+
+            std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
+            
+
+            for(auto& peer:Peers){
+                auto p=std::make_shared<Peer>(peer);
+                Connect_Peer(p);
+            }
+
         }
         catch(const boost::system::system_error& e)
         {
@@ -75,9 +90,12 @@ void Node::Start_Server(){
     }
 
     
-    void Node::do_accept(tcp::acceptor& acceptor){
+    void Node::do_accept(){
+
+        auto self =shared_from_this();
+
         acceptor.async_accept(
-            [this,&acceptor](const boost::system::error_code ec, Socket peer_socket ){
+            [self](const boost::system::error_code ec, Socket peer_socket ){
                 
                 if(!ec) {
 
@@ -85,22 +103,22 @@ void Node::Start_Server(){
                     auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());                
                     std::cerr<<"Accepted connection on port "
                                 <<peer_socket.local_endpoint().port()
-                                <<"at "<<std::ctime(&now)<<"\n";
+                                <<" at "<<std::ctime(&now)<<"\n";
 
 
                     auto Shared_socket=std::make_shared<Socket>(std::move(peer_socket));
                     auto buf=std::make_shared<boost::asio::streambuf>();
                     //do operations here
-                    auto Session=std::make_shared<ClientSession>(Shared_socket,buf,shared_from_this());
-                    this->Sessions.emplace_back(Session);
+                    auto Session=std::make_shared<ClientSession>(Shared_socket,buf,self);
+                    self->Sessions.emplace_back(Session);
 
-                    Session->start(this->isLeader);
+                    Session->start(self->isLeader);
                 }
                 else {
                     std::cerr<<"Accept error: "<<ec.what()<<"\n";
                 }
                 // To continue listening, restart the async_accept operation.
-                do_accept(acceptor);
+                self->do_accept();
             }
         );
     }
@@ -213,14 +231,18 @@ void Node::Start_Server(){
         return SocketVec;
     }
 
+    tcp::endpoint Node::CreateEndpoint(short port){
+        return tcp::endpoint(tcp::v4(), base_port);
+    }
+
     //we can change no. of endpoints depending on number of nodes
     std::vector<tcp::endpoint> Node::CreateEndpoints(short port){
         std::vector<tcp::endpoint> Endpoints;
-        for(size_t i=0;i<3;i++){
+        for(int i=0;i<2;i++){
 
             if(port == base_port+i) continue;
 
-            Endpoints.emplace_back( tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), base_port+i));
+            Endpoints.emplace_back( tcp::endpoint(boost::asio::ip::address_v4::loopback(), base_port+i));
         }
         return Endpoints;    
     }
