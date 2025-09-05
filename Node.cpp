@@ -49,7 +49,6 @@ void Node::Start_Server(){
                 auto buf=std::make_shared<boost::asio::streambuf>();
 
                 Peers.emplace_back(Peer{Sockets[i],Endpoints[i]});
-                Sessions.emplace_back(std::make_shared<ClientSession>(Sockets[i],buf,shared_from_this()));
             }
             
 
@@ -80,6 +79,8 @@ void Node::Start_Server(){
                 Connect_Peer(p);
             }
 
+            
+
         }
         catch(const boost::system::system_error& e)
         {
@@ -102,7 +103,7 @@ void Node::Start_Server(){
                     
                     auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());                
                     std::cerr<<"Accepted connection on port "
-                                <<peer_socket.local_endpoint().port()
+                                <<peer_socket.remote_endpoint().port()
                                 <<" at "<<std::ctime(&now)<<"\n";
 
 
@@ -127,13 +128,18 @@ void Node::Start_Server(){
         peer->socket->close();
 
         peer->socket->async_connect(peer->endpoint,
-        [this,&peer](boost::system::error_code ec){
+        [this,peer](boost::system::error_code ec){
             if(!ec){
                 
-                std::cerr<< "connected to "<<peer->endpoint<<"\n";
+                std::cerr<< "connected to "<<peer->endpoint.port()<<"\n";
                 //function to write specific text to socket
+                auto buf =std::make_shared<boost::asio::streambuf>();
+                auto session=std::make_shared<ClientSession>(peer->socket,buf,shared_from_this());
+                Sessions.emplace_back(session);
+                session->start(isLeader);
+
             }else{
-                std::cerr<<"failed to connect!!"<<ec.message()<<"retrying \n";
+                std::cerr<<"failed to connect!!"<<ec.message()<<" retrying \n";
 
                 //Retrying
                 
