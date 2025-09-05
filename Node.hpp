@@ -36,16 +36,6 @@ struct Peer {
     Peer(std::shared_ptr<Socket> Socket, tcp::endpoint Endpoint)
         : socket(std::move(Socket)), endpoint(std::move(Endpoint)) {}
 
-    Peer(Peer&& other) noexcept
-        : socket(std::move(other.socket)), endpoint(std::move(other.endpoint)) {}
-
-    Peer& operator=(Peer&& other) noexcept {
-        if (this != &other) {
-            socket = std::move(other.socket);
-            endpoint = std::move(other.endpoint);
-        }
-        return *this;
-    }
 };
 
 
@@ -85,7 +75,7 @@ public:
     
     void do_accept(tcp::acceptor& acceptor);
 
-    void Connect_Peer(Peer& peer);
+    void Connect_Peer(std::shared_ptr<Peer> peer);
     
 
     void TransmitMsg(std::string &Msg,std::shared_ptr<Socket>sock);

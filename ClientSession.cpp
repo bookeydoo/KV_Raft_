@@ -87,7 +87,7 @@ class Node;
                         }
 
                     }
-                    if(line.starts_with("RequestVote")){
+                    if(line.starts_with("REQUEST-VOTE")){
 
                          size_t term_Pos=line.find("term:")+5;
                         std::string term_str=line.substr(term_Pos);
@@ -164,7 +164,7 @@ class Node;
     void ApiSession::Handle_Req(){
 
         auto self(shared_from_this());
-        boost::asio::async_read_until(*socket,*buffer, '\n',
+        boost::asio::async_read_until(*socket,*buffer, "\r\n\r\n",
             [this,self](boost::system::error_code ec, size_t bytes_transferred) 
             {
                 if (!ec) {
@@ -192,7 +192,7 @@ class Node;
                                 auto sessions=parent->getSessions();
                                 std::string Msg=std::format("PassAppend:Key:{},Value{}",key,value);
                                 for(auto &session : sessions){
-                                    if(parent->Curr_leader==session->get_socket()->local_endpoint()){
+                                    if(parent->Curr_leader==session->get_socket()->remote_endpoint()){
                                         parent->TransmitMsg(Msg,session->get_socket());
                                     }
                                 }

@@ -63,7 +63,7 @@ void Node::Start_Server(){
             }
 
             auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            std::cerr<<"Started Node on Port"<<port<<"at "<<std::ctime(&now)<<"\n";
+            std::cerr<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
             
         }
         catch(const boost::system::system_error& e)
@@ -105,14 +105,14 @@ void Node::Start_Server(){
         );
     }
 
-    void Node::Connect_Peer(Peer& peer){
-        peer.socket->close();
+    void Node::Connect_Peer(std::shared_ptr<Peer> peer){
+        peer->socket->close();
 
-        peer.socket->async_connect(peer.endpoint,
+        peer->socket->async_connect(peer->endpoint,
         [this,&peer](boost::system::error_code ec){
             if(!ec){
                 
-                std::cerr<< "connected to "<<peer.endpoint<<"\n";
+                std::cerr<< "connected to "<<peer->endpoint<<"\n";
                 //function to write specific text to socket
             }else{
                 std::cerr<<"failed to connect!!"<<ec.message()<<"retrying \n";
@@ -120,10 +120,12 @@ void Node::Start_Server(){
                 //Retrying
                 
                 auto timer=std::make_shared<boost::asio::steady_timer>(
-                    peer.socket->get_executor()
+                    peer->socket->get_executor()
                 );
                 timer->expires_after(std::chrono::seconds(2));
                 timer->async_wait([this,&peer,timer](auto){
+                    //debug
+                    std::cerr<<"attempting connection"<<"\n";
                     Connect_Peer(peer);
                 });
              }
@@ -132,7 +134,7 @@ void Node::Start_Server(){
     
 
     void Node::TransmitMsg(std::string &Msg,std::shared_ptr<Socket> sock){
-
+        if(!Msg.empty() && Msg.back() != '\n')  Msg.push_back('\n');
         if(sock && sock->is_open()){
             boost::asio::async_write(
                 *sock,
@@ -153,7 +155,7 @@ void Node::Start_Server(){
 
     void Node::BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets){
         auto msg=std::make_shared<std::string>(Msg);
-
+        if(!msg.get()->empty() && msg.get()->back() != '\n' )  msg.get()->push_back('\n');
         for(auto& socket: sockets){
             if(socket && socket->is_open()){
                 boost::asio::async_write(
@@ -214,7 +216,7 @@ void Node::Start_Server(){
     //we can change no. of endpoints depending on number of nodes
     std::vector<tcp::endpoint> Node::CreateEndpoints(short port){
         std::vector<tcp::endpoint> Endpoints;
-        for(size_t i=0;i<4;i++){
+        for(size_t i=0;i<3;i++){
 
             if(port == base_port+i) continue;
 
@@ -310,7 +312,7 @@ void Node::Start_Server(){
 
         auto timer=std::make_shared<boost::asio::steady_timer>(IO_ctx);
         timer->expires_after(std::chrono::milliseconds(200));
-        timer->async_wait([this](const boost::system::error_code & ElectionTimeout){
+        timer->async_wait([this,timer](const boost::system::error_code & ElectionTimeout){
                     this->check_Election_result(ElectionTimeout);
         });  
         
@@ -450,7 +452,6 @@ void Node::Start_Server(){
 
             std::string Stringbuf;
             std::map<std::string,Logstruct> Log;
-            size_t i=0;
 
             while(std::getline(LogStream,Stringbuf)){
                 if(Stringbuf.find("op=append")==0){

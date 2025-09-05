@@ -16,7 +16,7 @@ int main(int argc ,char *argv[]){
     }
     else{
        int val=atoi(argv[1]);
-       port=(short)val;
+       port=val;
     }
 
     boost::asio::io_context IO_ctx;
