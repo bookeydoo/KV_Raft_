@@ -39,9 +39,15 @@ const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{
     
 void Node::Start_Server(){
         try
-        {
+        {   
             std::cerr<<"Starting server on port: "<<port<<"\n";
-            std::vector<tcp::endpoint>Endpoints=CreateEndpoints(port);
+            
+            //if couldnt load Config properly we quit
+            if(!ConfigLoad()){
+                return;
+            }
+
+            std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
             
             std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
             
@@ -296,21 +302,39 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         return SocketVec;
     }
 
+    //we can change no. of endpoints depending on number of nodes
+    std::vector<tcp::endpoint> Node::CreateEndpoints(){
+        std::vector<tcp::endpoint> Endpoints;
+        for(auto& Entry: Config_EP){
+            tcp::endpoint ep=CreateEndpoint(Entry.first,Entry.second);
+            std::cerr<<"Created an Endpoint"<<ep.address().to_string()<<":"<<ep.port()<<"\n";
+            Endpoints.emplace_back(ep);
+        }
+        return Endpoints;    
+    }
+
+    
     tcp::endpoint Node::CreateEndpoint(short port){
         return tcp::endpoint(tcp::v4(), port);
     }
 
-    //we can change no. of endpoints depending on number of nodes
-    std::vector<tcp::endpoint> Node::CreateEndpoints(short port){
-        std::vector<tcp::endpoint> Endpoints;
-        for(int i=0;i<2;i++){
+    
+    tcp::endpoint Node::CreateEndpoint(const std::string& ip, const std::string &portStr){
 
-            if(port == base_port+i) continue;
+        boost::system::error_code ec;
+        auto address=boost::asio::ip::make_address(ip,ec);
 
-            Endpoints.emplace_back( tcp::endpoint(boost::asio::ip::address_v4::loopback(), base_port+i));
+        if(ec){
+            throw std::runtime_error("Invalid Ip address"+ip);
         }
-        return Endpoints;    
+
+        unsigned short port=static_cast<unsigned short>(stoi(portStr));
+
+        return tcp::endpoint(address,port);
     }
+
+
+    
 
 
     int Node::generate_random_timeout_ms(){

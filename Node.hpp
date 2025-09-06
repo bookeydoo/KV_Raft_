@@ -94,8 +94,11 @@ public:
     std::vector<std::shared_ptr<Socket>> CreateSockets( boost::asio::io_context &IO_ctx);
 
     //we can change no. of endpoints depending on number of nodes
+    std::vector<tcp::endpoint>CreateEndpoints();
+
     tcp::endpoint CreateEndpoint(short port);
-    std::vector<tcp::endpoint>CreateEndpoints(short port);
+
+    tcp::endpoint CreateEndpoint(const std::string& ip, const std::string &port);
 
     int generate_random_timeout_ms();
 
