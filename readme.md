@@ -28,6 +28,15 @@ You run each node with a port for now and place a Config file in the same direct
 
 If you run the program without an ip , it will initalize to base_port 4900 but won't connect without a Config file: Config.txt (case sensitive)
 
+Structure of Config.txt:
+
+```
+Ip="127.0.0.1",port="4900"
+Ip="127.0.0.1",port="9001"
+Ip="127.0.0.1",port="9002"
+Ip="127.0.0.1",port="9003"
+````
+
 Also added Leader flag for testing: -L (WIP)
 
 To use the http api , you curl a request like the following :
