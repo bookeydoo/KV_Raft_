@@ -102,7 +102,7 @@ bool Node::ConfigLoad(){
     ConfigStream=std::fstream(Filename,std::ios::in);
 
     if(!ConfigStream.is_open()){
-        std::cerr<<"Couldnt access or open Config.txt, Make sure its in the same folder as .exe and thats its accesible\n";
+        std::cerr<<"Critical Error:\n Couldnt access or open Config.txt, Make sure its in the same folder as .exe and thats its accesible\n";
         return false; //CRITICAL ERROR
     }
 
