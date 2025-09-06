@@ -104,6 +104,7 @@ bool Node::ConfigLoad(){
     Ip="",port=""
     */
 
+
     std::string Filename="Config.txt";
     ConfigStream=std::fstream(Filename,std::ios::in);
 
@@ -142,7 +143,10 @@ bool Node::ConfigLoad(){
         }
 
         if (!ip.empty() && !port.empty()) {
-            Config_EP.emplace_back(ip, port);
+            auto candidate=std::make_pair(ip,port);
+            auto it=std::find(Config_EP.begin(),Config_EP.end(),candidate);
+            if(it==Config_EP.end())
+                Config_EP.emplace_back(ip, port);
         }
     }
 
@@ -203,7 +207,7 @@ void Node::Connect_Peer(std::shared_ptr<Peer> peer){
                 session->start(isLeader);
 
             }else{
-                std::cerr<<"failed to connect!!"<<ec.message()<<" retrying \n";
+                std::cerr<<"failed to connect!!\n"<<ec.message()<<" retrying \n";
 
                 //Retrying
                 
