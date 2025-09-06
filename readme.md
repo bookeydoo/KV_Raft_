@@ -1,4 +1,5 @@
-# KV_Raft_
+# KV_Raft_ (WIP)
+
 
 
 ## Description
@@ -23,9 +24,11 @@ g++ -std=c++20 -O2 -Wall -pthread  Server.cpp  Node.cpp ClientSession.cpp  -o ra
 ## How to use?
 
 Each program instance is a single Node instance.
-You run each node with a port for now , you should have it use one of the default ports(65531 ,65532,65533).
+You run each node with a port for now and place a Config file in the same directory as the exe or it won't run.
 
-If you run the program without an ip , it will initalize to base_port which is 65531 and will attempt connecting to default ip nodes(65532,65533)
+If you run the program without an ip , it will initalize to base_port 4900 but won't connect without a Config file: Config.txt (case sensitive)
+
+Also added Leader flag for testing: -L (WIP)
 
 To use the http api , you curl a request like the following :
 ```curl -X POST localhost:65531/kv -d "key=foo&value=bar"```
