@@ -117,7 +117,7 @@ bool Node::ConfigLoad(){
     while (std::getline(ConfigStream, Line)) {
         if (Line.empty()) continue; // skip blank lines
 
-        std::string ip, port;
+        std::string ip, Port;
         std::stringstream ss(Line);
         std::string token;
 
@@ -138,15 +138,20 @@ bool Node::ConfigLoad(){
             if (token.find("Ip") != std::string::npos) {
                 ip = value;
             } else if (token.find("port") != std::string::npos) {
-                port = value;
+                Port = value;
             }
         }
 
-        if (!ip.empty() && !port.empty()) {
-            auto candidate=std::make_pair(ip,port);
+        
+            //skip our node if found
+            //In a proper build that works on actual servers it should check the ip addr but since i am testing on local np
+        if(std::stoi(Port) == port)  continue; 
+
+        if (!ip.empty() && !Port.empty()) {
+            auto candidate=std::make_pair(ip,Port);
             auto it=std::find(Config_EP.begin(),Config_EP.end(),candidate);
             if(it==Config_EP.end())
-                Config_EP.emplace_back(ip, port);
+                Config_EP.emplace_back(ip, Port);
         }
     }
 
@@ -310,6 +315,11 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
     std::vector<tcp::endpoint> Node::CreateEndpoints(){
         std::vector<tcp::endpoint> Endpoints;
         for(auto& Entry: Config_EP){
+
+            //skip our node if found
+            if((std::stoi(Entry.second) == port) &&
+            (Entry.first == acceptor.local_endpoint().address().to_string()) ) continue; 
+
             tcp::endpoint ep=CreateEndpoint(Entry.first,Entry.second);
             std::cerr<<"Created an Endpoint"<<ep.address().to_string()<<":"<<ep.port()<<"\n";
             Endpoints.emplace_back(ep);

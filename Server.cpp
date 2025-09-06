@@ -13,7 +13,7 @@ int main(int argc ,char *argv[]){
 
     if(argc<2){ //no port was given
         port=base_port;    
-        std::cerr<<"no argument was given\n";
+        std::cerr<<"no arguments were given\n";
     }
     else{
         for(int i=1;i<argc;i++){
