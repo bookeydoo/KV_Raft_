@@ -45,7 +45,13 @@ int main(int argc ,char *argv[]){
     }
 
     Server->Start_Server();
+    auto flag =Server->ConfigLoad();
 
+
+    if(flag == false){
+        return 1;
+    }
+    
     for(size_t i=0;i<2;i++){
         Threads.emplace_back([&]{
             IO_ctx.run();

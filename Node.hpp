@@ -6,6 +6,7 @@
 #include<fstream>
 #include<chrono>
 #include<map>
+#include<unordered_map>
 #include<format>
 
 using namespace boost::asio::ip;
@@ -42,6 +43,7 @@ struct Peer {
 class Node : public std::enable_shared_from_this<Node>{
 private:
     std::fstream LogStream;
+    std::fstream ConfigStream;
     tcp::acceptor acceptor;  //non copyable , wont build if emplaced directly in a vec 
     std::vector<std::shared_ptr<Peer>> Peers; 
     std::vector<Candidate> candidates;
@@ -63,7 +65,7 @@ public:
     bool isCandidate=false;
     tcp::endpoint Curr_leader;
     std::map<std::string,Logstruct> Log;
-   
+    std::vector<std::pair<std::string,std::string>> Config_EP;
 
 
     Node(boost::asio::io_context& ctx,int Port);
@@ -72,6 +74,7 @@ public:
     const std::vector<std::shared_ptr<ClientSession>>& getSessions() const ;
     
     void Start_Server();
+    bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
     
     void do_accept();
 

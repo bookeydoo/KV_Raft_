@@ -29,11 +29,12 @@ Node::Node(boost::asio::io_context& ctx,int Port)
                             std::cerr<<"Couldn't Open file or Create \n";
                         }
 
-                    }
+                }
+
 //this is used to access the endpoints of the node sessions (non api)
-    const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{ 
+const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{ 
         return Sessions;    
-    } 
+} 
     
     
 void Node::Start_Server(){
@@ -85,10 +86,70 @@ void Node::Start_Server(){
         }
         
 
-    }
+}
+
+
+bool Node::ConfigLoad(){
+
 
     
-    void Node::do_accept(){
+    /*Config for the config should be like :
+    Ip="",port=""
+    Ip="",port=""
+    */
+
+    std::string Filename="Config.txt";
+    ConfigStream=std::fstream(Filename,std::ios::in);
+
+    if(!ConfigStream.is_open()){
+        std::cerr<<"Couldnt access or open Config.txt, Make sure its in the same folder as .exe and thats its accesible\n";
+        return false; //CRITICAL ERROR
+    }
+
+    std::string Line;
+    while (std::getline(ConfigStream, Line)) {
+        if (Line.empty()) continue; // skip blank lines
+
+        std::string ip, port;
+        std::stringstream ss(Line);
+        std::string token;
+
+        while (std::getline(ss, token, ',')) {
+            auto pos = token.find('=');
+            if (pos == std::string::npos) continue;
+
+            std::string value = token.substr(pos + 1);
+
+            // strip surrounding whitespace
+            value.erase(0, value.find_first_not_of(" \t"));
+            value.erase(value.find_last_not_of(" \t") + 1);
+
+            // remove quotes
+            if (!value.empty() && value.front() == '"') value.erase(0, 1);
+            if (!value.empty() && value.back() == '"') value.pop_back();
+
+            if (token.find("Ip") != std::string::npos) {
+                ip = value;
+            } else if (token.find("port") != std::string::npos) {
+                port = value;
+            }
+        }
+
+        if (!ip.empty() && !port.empty()) {
+            Config_EP.emplace_back(ip, port);
+        }
+    }
+
+    std::cout << "Loaded " << Config_EP.size() << " config entries.\n";
+    for (auto &c : Config_EP) {
+        std::cout << "Ip: " << c.first << ", Port: " << c.second << "\n";
+    }
+
+    return true;
+}
+
+    
+void Node::do_accept(){
 
         auto self =shared_from_this();
 
@@ -121,7 +182,7 @@ void Node::Start_Server(){
         );
     }
 
-    void Node::Connect_Peer(std::shared_ptr<Peer> peer){
+void Node::Connect_Peer(std::shared_ptr<Peer> peer){
         peer->socket->close();
 
         peer->socket->async_connect(peer->endpoint,
@@ -154,9 +215,10 @@ void Node::Start_Server(){
     }
     
 
-    void Node::TransmitMsg(std::string &Msg,std::shared_ptr<Socket> sock){
-        if(!Msg.empty() && Msg.back() != '\n')  Msg.push_back('\n');
-        if(sock && sock->is_open()){
+void Node::TransmitMsg(std::string &Msg,std::shared_ptr<Socket> sock){
+    if(!Msg.empty() && Msg.back() != '\n')  Msg.push_back('\n');
+
+    if(sock && sock->is_open()){
             boost::asio::async_write(
                 *sock,
                 boost::asio::buffer(Msg),
@@ -174,7 +236,7 @@ void Node::Start_Server(){
     }
     
 
-    void Node::BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets){
+void Node::BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets){
         auto msg=std::make_shared<std::string>(Msg);
         if(!msg.get()->empty() && msg.get()->back() != '\n' )  msg.get()->push_back('\n');
         for(auto& socket: sockets){
@@ -196,7 +258,7 @@ void Node::Start_Server(){
     }
 
 
-     void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) const{
+void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions) const{
         auto msg=std::make_shared<std::string>(Msg);
 
         for(auto& session: Sessions){
