@@ -235,7 +235,7 @@ void Node::Start_Server(){
     }
 
     tcp::endpoint Node::CreateEndpoint(short port){
-        return tcp::endpoint(tcp::v4(), base_port);
+        return tcp::endpoint(tcp::v4(), port);
     }
 
     //we can change no. of endpoints depending on number of nodes
