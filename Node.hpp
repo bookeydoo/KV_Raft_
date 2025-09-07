@@ -1,6 +1,7 @@
 #pragma once
 #include<iostream>
 #include<boost/asio.hpp>
+#include"ClientSession.hpp"
 #include<random>
 #include<thread>
 #include<fstream>
@@ -45,6 +46,7 @@ private:
     std::fstream LogStream;
     std::fstream ConfigStream;
     tcp::acceptor acceptor;  //non copyable , wont build if emplaced directly in a vec 
+    std::shared_ptr<tcp::acceptor> apiAcceptor;
     std::vector<std::shared_ptr<Peer>> Peers; 
     std::vector<Candidate> candidates;
     boost::asio::io_context &IO_ctx;    
@@ -66,7 +68,7 @@ public:
     tcp::endpoint Curr_leader;
     std::map<std::string,Logstruct> Log;
     std::vector<std::pair<std::string,std::string>> Config_EP;
-
+    
 
     Node(boost::asio::io_context& ctx,int Port);
                     
@@ -99,6 +101,8 @@ public:
     tcp::endpoint CreateEndpoint(short port);
 
     tcp::endpoint CreateEndpoint(const std::string& ip, const std::string &port);
+
+    void ConnectToApi(std::shared_ptr<tcp::acceptor> acceptor);
 
     int generate_random_timeout_ms();
 

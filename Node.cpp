@@ -19,7 +19,8 @@ int base_port = 4900;
 
 
 Node::Node(boost::asio::io_context& ctx,int Port)
-                :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx),acceptor(ctx)
+                :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx)
+                ,acceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx,tcp::endpoint(tcp::v4(),port+100)))
                 {
                         std::stringstream filename;
                         filename<<port<<".txt";
@@ -82,7 +83,9 @@ void Node::Start_Server(){
 
             std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
             
+            start_election_timer();
 
+            ConnectToApi(apiAcceptor);
             
 
         }
@@ -348,6 +351,23 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
     }
 
 
+    void Node::ConnectToApi(std::shared_ptr<tcp::acceptor> acceptor){
+
+        auto socket = std::make_shared<Socket>(IO_ctx);
+        auto self = shared_from_this();
+
+        acceptor->async_accept(*socket,
+        [self,acceptor,socket,this](const boost::system::error_code& ec){
+
+            if(!ec){
+                auto buffer=std::make_shared<boost::asio::streambuf>();
+                auto api_session=std::make_shared<ApiSession>(socket,buffer,self);
+
+                api_session->start(self->isLeader);
+            }
+            ConnectToApi(acceptor);
+        });
+    }
     
 
 

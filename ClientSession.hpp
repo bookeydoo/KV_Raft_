@@ -3,6 +3,7 @@
 #include<boost/asio.hpp>
 #include<chrono>
 #include<memory>
+#include<map>
 
 using namespace boost::asio::ip;
 using Socket = tcp::socket;
@@ -32,7 +33,12 @@ protected:
 
 class ApiSession: public ClientSession {
 public:
-    using ClientSession ::ClientSession;
+
+    ApiSession(std::shared_ptr<Socket> Socket,
+               std::shared_ptr<boost::asio::streambuf> Buffer,
+               std::shared_ptr<Node> Parent)
+    : ClientSession(std::move(Socket) ,std::move(Buffer),(std::move(Parent))){}
+
 
     void parseHttpRequest(const std::string & Raw_req, std::string& method,std::string& path,
         std::map<std::string,std::string>& headers, std::string & body);
