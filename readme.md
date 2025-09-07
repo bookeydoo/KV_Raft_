@@ -54,3 +54,4 @@ To use the http api , you curl a request like the following :
 
 ## TODO 
 Modify Config.txt parsing to parse a port for the apiSession acceptor 
+Look into using boost::log instead of std::cerr for better logging 
