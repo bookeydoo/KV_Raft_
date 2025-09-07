@@ -52,3 +52,5 @@ To use the http api , you curl a request like the following :
 - HOT config reload to add/remove peers dynamically
 - when a new node joins, keys/snapshots get redistributed
 
+## TODO 
+Modify Config.txt parsing to parse a port for the apiSession acceptor 
