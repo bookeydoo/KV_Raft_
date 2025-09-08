@@ -12,11 +12,10 @@ It provides a distributed key-value store with :
 
 
 ## Dependencies :
-Boost asio
+Boost asio and Boost log with all its dependices mentioned in build.rsp
 
 ## How to build
 
-You can use g++ or clang with the build.rsp file I created  or  use make with the list of arguments in the build.rsp 
 You can use g++ or clang with the build.rsp file I created  or  use make with the list of arguments in the build.rsp 
 
 Example of my building process on windows :
