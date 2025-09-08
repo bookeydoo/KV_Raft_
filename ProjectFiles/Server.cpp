@@ -12,14 +12,6 @@
 int main(int argc ,char *argv[]){
 
 
-    boost::log::add_console_log(std::clog);
-    BOOST_LOG_TRIVIAL(trace)<<"A trace severity message\n";
-    BOOST_LOG_TRIVIAL(debug)<<"A trace severity message\n";
-    BOOST_LOG_TRIVIAL(info)<<"A trace severity message\n";
-    BOOST_LOG_TRIVIAL(warning)<<"A trace severity message\n";
-    BOOST_LOG_TRIVIAL(error)<<"A trace severity message\n";
-    BOOST_LOG_TRIVIAL(fatal)<<"A trace severity message\n";
-    
     
     int port=0; 
     bool Leaderflag=false;
@@ -50,6 +42,7 @@ int main(int argc ,char *argv[]){
 
 
     auto Server=std::make_shared<Node>(IO_ctx,port);
+    Server->initLogging();
 
     if(Leaderflag) {  //Feature For testing 
     Server->isLeader=true;
@@ -57,6 +50,11 @@ int main(int argc ,char *argv[]){
     Server->isFollower=false;
     }
 
+    BOOST_LOG_TRIVIAL(trace)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(debug)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(info)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(warning)<<"Trace msg\n";
+    
     Server->Start_Server();
 
 
