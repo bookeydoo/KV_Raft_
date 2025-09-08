@@ -24,28 +24,6 @@ Example of my building process on windows :
 g++ @build.rsp 
 ```
 
-Example of build process with make:
-```
-CXX = g++
-CXXFLAGS = -I../include
-LDFLAGS = -L../libs
-LIBS = -lboost_log-mgw15-mt-x64-1_86 \
-       -lboost_log_setup-mgw15-mt-x64-1_86 \
-       -lboost_thread-mgw15-mt-x64-1_86 \
-       -lboost_system-mgw15-mt-x64-1_86 \
-       -lboost_filesystem-mgw15-mt-x64-1_86 \
-       -lboost_date_time-mgw15-mt-x64-1_86 \
-       -lboost_regex-mgw15-mt-x64-1_86 \
-       -lws2_32 -lmswsock -luser32 -ladvapi32 -lpsapi
-
-OBJS = ../src/main.o ../src/Node.o ../src/Server.o
-
-myprog: $(OBJS)
-	$(CXX) -o ../bin/myprog $(OBJS) $(LDFLAGS) $(LIBS)
-
-```
-
-
 ## How to use?
 
 Each program instance is a single Node instance.
