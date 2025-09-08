@@ -1,7 +1,8 @@
 import subprocess
+import time 
+
 
 def read_Conf_File(filename):
-
     array=[]
     ip   = None
     port = None
@@ -26,6 +27,22 @@ ConfigFile="Config.txt"
 array =read_Conf_File(ConfigFile)
 
 print("Starting all nodes in Config file")
+processArray=[]
+
+#Start the processes
 for element in array:
-    subprocess.run(["raft_server.exe",element])
-    
+    process=subprocess.Popen(["raft_server.exe",element])
+    processArray.append(process)
+
+
+
+
+#graceful shutdown
+time.sleep(30)
+for proc in processArray:
+    proc.terminate()
+
+#if graceful shutdown didnt work 
+gone,alive=subprocess.wait_procs(processArray,timeout=5)
+for proc in alive:
+    proc.kill()
