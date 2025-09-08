@@ -2,12 +2,25 @@
 #include<iostream>
 #include"Node.hpp"
 #include<boost/asio.hpp>
+#include<boost/log/trivial.hpp>
+#include<boost/system/error_code.hpp>
+#include<boost/log/utility/setup/console.hpp>
 #include<thread>
 
 
 
 int main(int argc ,char *argv[]){
 
+
+    boost::log::add_console_log(std::clog);
+    BOOST_LOG_TRIVIAL(trace)<<"A trace severity message\n";
+    BOOST_LOG_TRIVIAL(debug)<<"A trace severity message\n";
+    BOOST_LOG_TRIVIAL(info)<<"A trace severity message\n";
+    BOOST_LOG_TRIVIAL(warning)<<"A trace severity message\n";
+    BOOST_LOG_TRIVIAL(error)<<"A trace severity message\n";
+    BOOST_LOG_TRIVIAL(fatal)<<"A trace severity message\n";
+    
+    
     int port=0; 
     bool Leaderflag=false;
 

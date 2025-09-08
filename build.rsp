@@ -1,0 +1,13 @@
+-std=c++23 -Wall -pthread  
+./ProjectFiles/Server.cpp 
+./ProjectFiles/Node.cpp 
+./ProjectFiles/ClientSession.cpp
+-o raft_server
+-lboost_log-mgw15-mt-x64-1_86 
+-lboost_log_setup-mgw15-mt-x64-1_86
+-lboost_thread-mt -lboost_filesystem-mt 
+-lboost_date_time-mt
+-ladvapi32 -lpsapi
+-luser32 
+-lws2_32
+-lmswsock
