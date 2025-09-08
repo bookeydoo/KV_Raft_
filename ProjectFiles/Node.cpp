@@ -41,7 +41,7 @@ const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{
 void Node::Start_Server(){
         try
         {   
-            std::cerr<<"Starting server on port: "<<port<<"\n";
+            BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
             
             //if couldnt load Config properly we quit
             if(!ConfigLoad()){
@@ -67,7 +67,7 @@ void Node::Start_Server(){
             //on each unique acceptor object , we run async accept and io_ctx manages them
 
             auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            std::cerr<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
+            BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
             
 
             
@@ -297,6 +297,41 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
             }
         }
     }
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    //-----------------------Logging functions
+    //----------------------------------------------------------------------------------------------------------
+
+    std::string Node::severityColor(boost::log::trivial::severity_level level){
+        switch(level){
+            case boost::log::trivial::trace   : return "\033[37m"; // grey
+            case boost::log::trivial::debug   : return "\033[36m"; // cyan
+            case boost::log::trivial::info    : return "\033[32m"; // green
+            case boost::log::trivial::warning : return "\033[33m"; // yellow
+            case boost::log::trivial::error   : return "\033[31m"; // red
+            case boost::log::trivial::fatal   : return "\033[41m"; // red background
+            default: return "\033[37m";
+        }
+    }
+
+
+   void Node::initLogging() {
+    namespace logging = boost::log;
+
+    auto sink = logging::add_console_log();
+
+    sink->set_formatter([this](const boost::log::record_view& rec,
+                           boost::log::formatting_ostream& strm) {
+        auto lvl = rec[boost::log::trivial::severity];
+        std::string color = severityColor(lvl.get());  // call static method
+        strm << color
+             << "[" << lvl << "] "
+             << rec[boost::log::expressions::smessage]
+             << "\033[0m"; // reset
+    });
+
+    logging::add_common_attributes();
+}
 
 
 

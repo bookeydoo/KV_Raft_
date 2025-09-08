@@ -2,12 +2,17 @@
 #include<iostream>
 #include"Node.hpp"
 #include<boost/asio.hpp>
+#include<boost/log/trivial.hpp>
+#include<boost/system/error_code.hpp>
+#include<boost/log/utility/setup/console.hpp>
 #include<thread>
 
 
 
 int main(int argc ,char *argv[]){
 
+
+    
     int port=0; 
     bool Leaderflag=false;
 
@@ -37,6 +42,7 @@ int main(int argc ,char *argv[]){
 
 
     auto Server=std::make_shared<Node>(IO_ctx,port);
+    Server->initLogging();
 
     if(Leaderflag) {  //Feature For testing 
     Server->isLeader=true;
@@ -44,6 +50,11 @@ int main(int argc ,char *argv[]){
     Server->isFollower=false;
     }
 
+    BOOST_LOG_TRIVIAL(trace)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(debug)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(info)<<"Trace msg\n";
+    BOOST_LOG_TRIVIAL(warning)<<"Trace msg\n";
+    
     Server->Start_Server();
 
 

@@ -7,7 +7,11 @@
 #include<fstream>
 #include<chrono>
 #include<map>
-#include<unordered_map>
+#include<boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include<boost/system/error_code.hpp>
+#include<boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
 #include<format>
 
 using namespace boost::asio::ip;
@@ -75,6 +79,8 @@ public:
       //this is used to access the endpoints of the node sessions (non api)
     const std::vector<std::shared_ptr<ClientSession>>& getSessions() const ;
     
+
+    
     void Start_Server();
     bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
     
@@ -88,6 +94,15 @@ public:
     void BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socket>>& sockets);
     void BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr<ClientSession>>& Sessions)const ;
 
+
+    //--------------------------------------------------------------------------------------------------------------------------
+    //-----------------------Logging functions
+    //----------------------------------------------------------------------------------------------------------
+
+
+    std::string severityColor(boost::log::trivial::severity_level level);
+
+    void initLogging();
 
     //--------------------------------------------------------------------------------------------------------------------------
     //-----------------------Creating stuff for the Node 
