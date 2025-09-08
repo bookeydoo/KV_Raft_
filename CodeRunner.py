@@ -1,7 +1,6 @@
 import subprocess
 import time 
-import signal 
-import sys
+
 
 def read_Conf_File(filename):
     array=[]
@@ -41,7 +40,7 @@ try:
     time.sleep(30)
     
 except KeyboardInterrupt:
-    print("\nInterrupted ! Killing processes...")
+    print("\nInterrupted!\nKilling processes...")
 
 
 
