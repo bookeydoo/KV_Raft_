@@ -9,12 +9,6 @@ It provides a distributed key-value store with :
 - Persists state in case of Node failures(fault tolerance)
 - Leader Election between nodes
 
-## Dependencies :
-Boost asio, Boost log and its dependices(whats included in the build.rsp)
-
-## Dependencies :
-Boost asio, Boost log and its dependices(whats included in the build.rsp)
-
 
 
 ## Dependencies :
@@ -28,7 +22,7 @@ You can use g++ or clang with the build.rsp file I created  or  use make with th
 Example of my building process on windows :
 
 ```
-g++ -std=c++20 -O2 -Wall -pthread  Server.cpp  Node.cpp ClientSession.cpp  -o raft_server -lws2_32 -lmswsock
+g++ @build.rsp 
 ```
 
 Example of build process with make:
