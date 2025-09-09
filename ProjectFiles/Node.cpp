@@ -16,6 +16,8 @@ using Socket = tcp::socket;
 
 int base_port = 4900;
 
+bool FileFlag=false;
+
 
 
 Node::Node(boost::asio::io_context& ctx,int Port)
@@ -38,9 +40,13 @@ const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{
 } 
     
     
-void Node::Start_Server(){
-        try
-        {   
+void Node::Start_Server(bool fileflag){
+    
+    FileFlag=fileflag;
+    
+    if(FileFlag){
+        try{   
+
             BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
             
             //if couldnt load Config properly we quit
@@ -93,7 +99,7 @@ void Node::Start_Server(){
         {
             std::cerr <<"Failed to start server on port "<<port<<": "<< e.what() << '\n';
         }
-        
+    }
 
 }
 

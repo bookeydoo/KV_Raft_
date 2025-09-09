@@ -15,10 +15,11 @@ int main(int argc ,char *argv[]){
     
     int port=0; 
     bool Leaderflag=false;
+    bool Fileflag=false;
 
     if(argc<2){ //no port was given
         port=base_port;    
-        std::cerr<<"no arguments were given\n";
+        BOOST_LOG_TRIVIAL(warning)<<"no arguments were given\n";
     }
     else{
         for(int i=1;i<argc;i++){
@@ -27,10 +28,15 @@ int main(int argc ,char *argv[]){
 
             if(arg =="-L"){
                 Leaderflag=true;
-                std::cerr<<"Starting this node as a Leader\n";
+                BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
             }else{                
                 int val=atoi(argv[i]);
                 port=val;
+            }
+            //stands for file for putting the logs in a file instead of terminal
+            if(arg=="-f" || arg=="-F") {
+                Fileflag=true;
+                BOOST_LOG_TRIVIAL(info)<<"Logs will go to Node ip.txt \n";
             }
         }    
         
@@ -49,11 +55,6 @@ int main(int argc ,char *argv[]){
     Server->isCandidate=false;
     Server->isFollower=false;
     }
-
-    BOOST_LOG_TRIVIAL(trace)<<"Trace msg\n";
-    BOOST_LOG_TRIVIAL(debug)<<"Trace msg\n";
-    BOOST_LOG_TRIVIAL(info)<<"Trace msg\n";
-    BOOST_LOG_TRIVIAL(warning)<<"Trace msg\n";
     
     Server->Start_Server();
 
