@@ -27,7 +27,7 @@ Node::Node(boost::asio::io_context& ctx,int Port)
                         LogStream=std::fstream(filename.str(),std::ios::out | std::ios::in| std::ios::app);
                         
                         if(!LogStream.is_open()){
-                            std::cerr<<"Couldn't Open file or Create \n";
+                            BOOST_LOG_TRIVIAL(error)<<"Couldn't Open file or Create \n";
                         }
 
                 }
@@ -81,7 +81,7 @@ void Node::Start_Server(){
 
             do_accept();
 
-            std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
+            BOOST_LOG_TRIVIAL(info)<<"Listening on "<<acceptor.local_endpoint()<<"\n";
             
             start_election_timer();
 
@@ -91,7 +91,7 @@ void Node::Start_Server(){
         }
         catch(const boost::system::system_error& e)
         {
-            std::cerr <<"Failed to start server on port "<<port<<": "<< e.what() << '\n';
+            BOOST_LOG_TRIVIAL(fatal)<<"Failed to start server on port "<<port<<": "<< e.what() << '\n';
         }
         
 
@@ -112,7 +112,7 @@ bool Node::ConfigLoad(){
     ConfigStream=std::fstream(Filename,std::ios::in);
 
     if(!ConfigStream.is_open()){
-        std::cerr<<"Critical Error:\n Couldnt access or open Config.txt, Make sure its in the same folder as .exe and thats its accesible\n";
+        BOOST_LOG_TRIVIAL(fatal)<<"Critical Error:\n Couldnt access or open Config.txt, Make sure its in the same folder as .exe and thats its accesible\n";
         return false; //CRITICAL ERROR
     }
 
@@ -158,9 +158,9 @@ bool Node::ConfigLoad(){
         }
     }
 
-    std::cout << "Loaded " << Config_EP.size() << " config entries.\n";
+    BOOST_LOG_TRIVIAL(trace) << "Loaded " << Config_EP.size() << " config entries.\n";
     for (auto &c : Config_EP) {
-        std::cout << "Ip: " << c.first << ", Port: " << c.second << "\n";
+        BOOST_LOG_TRIVIAL(trace) << "Ip: " << c.first << ", Port: " << c.second << "\n";
     }
 
     return true;
@@ -178,7 +178,7 @@ void Node::do_accept(){
 
                     
                     auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());                
-                    std::cerr<<"Accepted connection on port "
+                    BOOST_LOG_TRIVIAL(info)<<"Accepted connection on port "
                                 <<peer_socket.remote_endpoint().port()
                                 <<" at "<<std::ctime(&now)<<"\n";
 
@@ -192,7 +192,7 @@ void Node::do_accept(){
                     Session->start(self->isLeader);
                 }
                 else {
-                    std::cerr<<"Accept error: "<<ec.what()<<"\n";
+                    BOOST_LOG_TRIVIAL(error)<<"Accept error: "<<ec.what()<<"\n";
                 }
                 // To continue listening, restart the async_accept operation.
                 self->do_accept();
@@ -207,7 +207,7 @@ void Node::Connect_Peer(std::shared_ptr<Peer> peer){
         [this,peer](boost::system::error_code ec){
             if(!ec){
                 
-                std::cerr<< "connected to "<<peer->endpoint.port()<<"\n";
+                BOOST_LOG_TRIVIAL(trace)<< "connected to "<<peer->endpoint.port()<<"\n";
                 //function to write specific text to socket
                 auto buf =std::make_shared<boost::asio::streambuf>();
                 auto session=std::make_shared<ClientSession>(peer->socket,buf,shared_from_this());
@@ -215,7 +215,7 @@ void Node::Connect_Peer(std::shared_ptr<Peer> peer){
                 session->start(isLeader);
 
             }else{
-                std::cerr<<"failed to connect!!\n"<<ec.message()<<" retrying \n";
+                BOOST_LOG_TRIVIAL(warning)<<"failed to connect!!\n"<<ec.message()<<" retrying \n";
 
                 //Retrying
                 
@@ -225,7 +225,7 @@ void Node::Connect_Peer(std::shared_ptr<Peer> peer){
                 timer->expires_after(std::chrono::seconds(2));
                 timer->async_wait([this,&peer,timer](auto){
                     //debug
-                    std::cerr<<"attempting connection"<<"\n";
+                    BOOST_LOG_TRIVIAL(trace)<<"attempting connection"<<"\n";
                     Connect_Peer(peer);
                 });
              }
@@ -242,10 +242,10 @@ void Node::TransmitMsg(std::string &Msg,std::shared_ptr<Socket> sock){
                 boost::asio::buffer(Msg),
                 [Msg,sock](boost::system::error_code  ec, size_t bytes_transferred){
                     if(ec){
-                        std::cerr<<"Failed to send"<<ec.message()<<"\n";
+                        BOOST_LOG_TRIVIAL(error)<<"Failed to send"<<ec.message()<<"\n";
                     }
                     else{
-                        std::cerr<<"Sent:"<<bytes_transferred
+                        BOOST_LOG_TRIVIAL(trace)<<"Sent:"<<bytes_transferred
                                  <<"bytes\n" ;
                     }
                 }
@@ -264,10 +264,10 @@ void Node::BroadcastMsg(const std::string &Msg,std::vector<std::shared_ptr<Socke
                 boost::asio::buffer(*msg),
                 [msg,socket](boost::system::error_code  ec, size_t bytes_transferred){
                     if(ec){
-                        std::cerr<<"Failed to send"<<ec.message()<<"\n";
+                        BOOST_LOG_TRIVIAL(error)<<"Failed to send"<<ec.message()<<"\n";
                     }
                     else{
-                        std::cerr<<"Sent:"<<bytes_transferred
+                        BOOST_LOG_TRIVIAL(trace)<<"Sent:"<<bytes_transferred
                                  <<"bytes\n" ;
                     }
                 });
@@ -287,10 +287,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                 boost::asio::buffer(*msg),
                 [msg,socket_ptr](boost::system::error_code  ec, size_t bytes_transferred){
                     if(ec){
-                        std::cerr<<"Failed to send"<<ec.message()<<"\n";
+                        BOOST_LOG_TRIVIAL(error)<<"Failed to send"<<ec.message()<<"\n";
                     }
                     else{
-                        std::cerr<<"Sent:"<<bytes_transferred
+                        BOOST_LOG_TRIVIAL(trace)<<"Sent:"<<bytes_transferred
                                  <<"bytes\n" ;
                     }
                 });
@@ -304,9 +304,9 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     std::string Node::severityColor(boost::log::trivial::severity_level level){
         switch(level){
-            case boost::log::trivial::trace   : return "\033[37m"; // grey
-            case boost::log::trivial::debug   : return "\033[36m"; // cyan
-            case boost::log::trivial::info    : return "\033[32m"; // green
+            case boost::log::trivial::trace   : return "\033[32m"; // green
+            case boost::log::trivial::debug   : return "\033[35m"; // magenta 
+            case boost::log::trivial::info    : return "\033[34m"; // blue
             case boost::log::trivial::warning : return "\033[33m"; // yellow
             case boost::log::trivial::error   : return "\033[31m"; // red
             case boost::log::trivial::fatal   : return "\033[41m"; // red background
@@ -359,7 +359,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
             (Entry.first == acceptor.local_endpoint().address().to_string()) ) continue; 
 
             tcp::endpoint ep=CreateEndpoint(Entry.first,Entry.second);
-            std::cerr<<"Created an Endpoint"<<ep.address().to_string()<<":"<<ep.port()<<"\n";
+            BOOST_LOG_TRIVIAL(trace)<<"Created an Endpoint"<<ep.address().to_string()<<":"<<ep.port()<<"\n";
             Endpoints.emplace_back(ep);
         }
         return Endpoints;    
@@ -412,7 +412,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     void Node::start_election_timer(){
         auto timeout=std::chrono::milliseconds(generate_random_timeout_ms());
-        std::cerr<<"Election timeout set to: "<<timeout<<"\n";
+        BOOST_LOG_TRIVIAL(debug)<<"Election timeout set to: "<<timeout<<"\n";
 
         election_timer.expires_after(timeout);
 
@@ -421,10 +421,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         auto self=shared_from_this();
         election_timer.async_wait([self](boost::system::error_code ec){
             if(!ec){
-                std::cerr<<"Election timer expired so starting Election\n";
+                BOOST_LOG_TRIVIAL(debug)<<"Election timer expired so starting Election\n";
                 self->start_Election();
             }else if(ec==boost::asio::error::operation_aborted){
-                std::cerr<<"Election timer reset\n";
+                BOOST_LOG_TRIVIAL(debug)<<"Election timer reset\n";
             }
         });
 
@@ -473,7 +473,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
     void Node::start_Election(){
         
         if(this->isLeader ){
-            std::cerr<<"already a leader, No election needed\n";
+            BOOST_LOG_TRIVIAL(debug)<<"already a leader, No election needed\n";
             return ;
         }
 
@@ -496,7 +496,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                     this->check_Election_result(ElectionTimeout);
         });  
         
-        std::cerr<<"Election ended\n";
+        BOOST_LOG_TRIVIAL(info)<<"Election ended\n";
     }
 
     void Node::check_Election_result(const boost::system::error_code& ElectionTimeout){
@@ -511,16 +511,16 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
             return; 
         }
         if (this->isCandidate && this->candidates.size() > (Peers.size() + 1) / 2) {
-            std::cerr << "Election won! Becoming the leader." << std::endl;
+            BOOST_LOG_TRIVIAL(info) << "Election won! Becoming the leader.\n";
             this->isLeader = true;
             this->isCandidate = false;
             election_timer.cancel();
             Leaderfunc();
         } 
-        else {
-        std::cerr << "Election timed out. Starting a new election." << std::endl;
-        // Start a new election with a new term
-        this->start_Election();
+        else{
+            BOOST_LOG_TRIVIAL(info) << "Election timed out. Starting a new election.\n";
+            // Start a new election with a new term
+            this->start_Election();
         }
     }
 
@@ -543,10 +543,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         auto self=shared_from_this();
         Heartbeat_timer.async_wait([self](boost::system::error_code ec){
             if(!ec){
-                std::cerr<<"Heartbeat timer expired so starting Election\n";
+                BOOST_LOG_TRIVIAL(info)<<"Heartbeat timer expired so starting Election\n";
                 self->Leaderfunc();
             }else if(ec==boost::asio::error::operation_aborted){
-                std::cerr<<"Heartbeat timer reset? i think this shouldn't happen\n";
+                BOOST_LOG_TRIVIAL(warning)<<"Heartbeat timer reset? i think this shouldn't happen\n";
             }
         });
 
@@ -628,7 +628,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     std::map<std::string,Logstruct> Node::RestoreState(){
         if(LogStream && LogStream.is_open()){
-            std::cerr<<"Started restoring state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Started restoring state\n";
 
             std::string Stringbuf;
             std::map<std::string,Logstruct> Log;
@@ -667,23 +667,23 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                     key=Stringbuf.substr(key_start,key_end-key_start);
 
                     Log.erase(key);
-                    std::cerr<<"successfully deleted item"<<key<<"\n";
+                    BOOST_LOG_TRIVIAL(trace)<<"successfully deleted item"<<key<<"\n";
                 }
                 
 
             }
 
-            std::cerr<<"Succesfully was able to Restore state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Succesfully was able to Restore state\n";
             return Log;
         }
 
-        std::cerr<<"Critical Error: failed to open Log\n";
+        BOOST_LOG_TRIVIAL(fatal)<<"Critical Error: failed to open Log\n";
         return {};
     }
 
     bool Node::AddtoLog(bool Write,std::string& key,std::string& value, int& term){ //1 for W and 0 for Delete
         if(LogStream && LogStream.is_open()){
-            std::cerr<<"Started Persisting state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Started Persisting state\n";
             std::string Stringbuf;
             if(Write){
                 LogStream<<"op=append,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
@@ -692,10 +692,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                 LogStream<<"op=delete,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
             }
 
-            std::cerr<<"Success\n";
+            BOOST_LOG_TRIVIAL(trace)<<"Success\n";
             return 1;
         }
-        std::cerr<<"Failed to write\n";
+        BOOST_LOG_TRIVIAL(error)<<"Failed to write\n";
         return 0;
     }
 
