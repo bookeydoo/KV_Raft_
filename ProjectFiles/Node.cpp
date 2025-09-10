@@ -19,7 +19,7 @@ namespace expr    = boost::log::expressions;
 
 int base_port = 4900;
 
-bool FileFlag=false;
+
 
 
 
@@ -43,68 +43,63 @@ const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{
 } 
     
     
-void Node::Start_Server(bool fileflag){
-    
-    FileFlag=fileflag;
-    
-    if(FileFlag){
-        try{   
-
-            BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
-            
-            //if couldnt load Config properly we quit
-            if(!ConfigLoad()){
-                return;
-            }
-
-            std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
-            
-            std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
-            
-
-            for(size_t i=0;i<Endpoints.size();i++){
-
-                if(Endpoints[i].port() == port) continue;
-                auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
-                Peers.emplace_back(peer);
-                Connect_Peer(peer);
-            }
-            
-
-            //acceptor acts like a server socket from java
-            //for each node(port) we are listening to we need to create a unique acceptor
-            //on each unique acceptor object , we run async accept and io_ctx manages them
-
-            auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
-            
-
-            
-            
-
-            auto NodeEndpoint=CreateEndpoint(port);
-            acceptor.open(NodeEndpoint.protocol());
-            acceptor.set_option(boost::asio::socket_base::reuse_address(true));
-            acceptor.bind(NodeEndpoint);
-            acceptor.listen();
-
-            do_accept();
-
-            std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
-            
-            start_election_timer();
-
-            ConnectToApi(apiAcceptor);
-            
-
+void Node::Start_Server(){
+    try{   
+        BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
+        
+        //if couldnt load Config properly we quit
+        if(!ConfigLoad()){
+            return;
         }
-        catch(const boost::system::system_error& e)
-        {
-            std::cerr <<"Failed to start server on port "<<port<<": "<< e.what() << '\n';
+
+        std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
+        
+        std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
+        
+
+        for(size_t i=0;i<Endpoints.size();i++){
+
+            if(Endpoints[i].port() == port) continue;
+            auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
+            Peers.emplace_back(peer);
+            Connect_Peer(peer);
         }
+        
+
+        //acceptor acts like a server socket from java
+        //for each node(port) we are listening to we need to create a unique acceptor
+        //on each unique acceptor object , we run async accept and io_ctx manages them
+
+        auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
+        
+
+        
+        
+
+        auto NodeEndpoint=CreateEndpoint(port);
+        acceptor.open(NodeEndpoint.protocol());
+        acceptor.set_option(boost::asio::socket_base::reuse_address(true));
+        acceptor.bind(NodeEndpoint);
+        acceptor.listen();
+
+        do_accept();
+
+        std::cerr<<"Listening on "<<acceptor.local_endpoint()<<"\n";
+        
+        start_election_timer();
+
+        ConnectToApi(apiAcceptor);
+        
+
     }
-
+    catch(const boost::system::system_error& e)
+    {
+        std::cerr <<"Failed to start server on port "<<port<<": "<< e.what() << '\n';
+    }
 }
+
+
 
 
 bool Node::ConfigLoad(){

@@ -85,7 +85,7 @@ public:
     
 
     
-    void Start_Server(bool fileflag);
+    void Start_Server();
     bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
     
     void do_accept();

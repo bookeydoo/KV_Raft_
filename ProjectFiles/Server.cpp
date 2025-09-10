@@ -61,7 +61,7 @@ int main(int argc ,char *argv[]){
     Server->isFollower=false;
     }
     
-    Server->Start_Server(Leaderflag);
+    Server->Start_Server();
 
     switch(LogType) {
             case LoggingType::Default:
