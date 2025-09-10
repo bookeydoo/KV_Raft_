@@ -45,14 +45,16 @@ void Node::Start_Server(){
         }
 
         std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
-        
-        std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
+        std::vector<std::shared_ptr<Socket>>Sockets;
+       
         
 
-        for(size_t i=0;i<Endpoints.size();i++){
+        for( auto&ep :Endpoints){
 
-            if(Endpoints[i].port() == port) continue;
-            auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
+            if(ep.port() == port) continue;
+            auto socket=std::make_shared<Socket>(this->IO_ctx);
+            Sockets.emplace_back(socket);
+            auto peer=std::make_shared<Peer>(socket,ep);
             Peers.emplace_back(peer);
             Connect_Peer(peer);
         }
@@ -397,24 +399,14 @@ void Node::initLogging() {
     //-----------------------Creating stuff for the Node 
     //----------------------------------------------------------------------------------------------------------
 
-    std::vector<std::shared_ptr<Socket>>Node::CreateSockets( boost::asio::io_context &IO_ctx){
-        std::vector<std::shared_ptr<Socket>> SocketVec;
-        for(size_t i=0;i<3;i++){
-            auto socket=std::make_shared<Socket>(IO_ctx);
-            SocketVec.emplace_back(std::move(socket));
-        }
-
-        return SocketVec;
-    }
-
     //we can change no. of endpoints depending on number of nodes
     std::vector<tcp::endpoint> Node::CreateEndpoints(){
         std::vector<tcp::endpoint> Endpoints;
         for(auto& Entry: Config_EP){
 
             //skip our node if found
-            if((std::stoi(Entry.second) == port) &&
-            (Entry.first == acceptor.local_endpoint().address().to_string()) ) continue; 
+            if(std::stoi(Entry.second) == port) 
+             continue; 
 
             tcp::endpoint ep=CreateEndpoint(Entry.first,Entry.second);
             BOOST_LOG_TRIVIAL(trace)<<"Created an Endpoint"<<ep.address().to_string()<<":"<<ep.port()<<"\n";

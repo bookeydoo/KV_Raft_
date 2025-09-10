@@ -116,7 +116,7 @@ public:
     //-----------------------Creating stuff for the Node 
     //----------------------------------------------------------------------------------------------------------
 
-    std::vector<std::shared_ptr<Socket>> CreateSockets( boost::asio::io_context &IO_ctx);
+    // std::vector<std::shared_ptr<Socket>> CreateSockets( boost::asio::io_context &IO_ctx);
 
     //we can change no. of endpoints depending on number of nodes
     std::vector<tcp::endpoint>CreateEndpoints();
