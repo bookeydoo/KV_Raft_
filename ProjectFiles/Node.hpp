@@ -7,6 +7,8 @@
 #include<chrono>
 #include<map>
 #include<boost/log/core.hpp>
+#include<boost/log/sources/channel_logger.hpp>
+#include<boost/log/sources/record_ostream.hpp>
 #include<boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include<boost/system/error_code.hpp>
@@ -60,7 +62,7 @@ private:
     boost::asio::steady_timer election_timer;
     boost::asio::steady_timer Heartbeat_timer;
     std::vector<std::shared_ptr<ClientSession>> Sessions;  //internally have sockets (non copyable) 
-    
+    boost::log::sources::channel_logger<> updatelogger{boost::log::keywords::channel="updates"};
     //for random timeouts
     std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> dist{150,300};
