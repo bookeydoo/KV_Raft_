@@ -308,9 +308,9 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     std::string Node::severityColor(boost::log::trivial::severity_level level){
         switch(level){
-            case boost::log::trivial::trace   : return "\033[37m"; // grey
-            case boost::log::trivial::debug   : return "\033[36m"; // cyan
-            case boost::log::trivial::info    : return "\033[32m"; // green
+             case boost::log::trivial::trace   : return "\033[32m"; // green
+            case boost::log::trivial::debug   : return "\033[35m"; // magenta 
+            case boost::log::trivial::info    : return "\033[34m"; // blue
             case boost::log::trivial::warning : return "\033[33m"; // yellow
             case boost::log::trivial::error   : return "\033[31m"; // red
             case boost::log::trivial::fatal   : return "\033[41m"; // red background
