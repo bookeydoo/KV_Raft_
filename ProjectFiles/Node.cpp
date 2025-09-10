@@ -13,6 +13,9 @@ using namespace boost::asio::ip;
 using Socket = tcp::socket;
 
 
+namespace logging = boost::log;
+namespace sinks   = boost::log::sinks;
+namespace expr    = boost::log::expressions;
 
 int base_port = 4900;
 
@@ -320,13 +323,23 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         }
     }
 
+    
+    boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> console_sink;
+    boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> file_sink;
 
    void Node::initLogging() {
-    namespace logging = boost::log;
+  
 
-    auto sink = logging::add_console_log();
+    
 
-    sink->set_formatter([this](const boost::log::record_view& rec,
+    logging::add_common_attributes();
+
+    //console sink
+    auto backend_console=boost::make_shared<sinks::text_ostream_backend>();
+    backend_console->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+    console_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_console);
+
+    console_sink->set_formatter([this](const boost::log::record_view& rec,
                            boost::log::formatting_ostream& strm) {
         auto lvl = rec[boost::log::trivial::severity];
         std::string color = severityColor(lvl.get());  // call static method
@@ -336,8 +349,31 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
              << "\033[0m"; // reset
     });
 
-    logging::add_common_attributes();
+    //file sink
+    auto backend_file=boost::make_shared<sinks::text_ostream_backend>();
+    backend_file->add_stream(boost::make_shared<std::ofstream>("mylog.log"));
+    file_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_file);
+
+    ChangeLoggingTo(LoggingType::Default); //default 
 }
+
+
+    void Node::ChangeLoggingTo(LoggingType logtype){
+
+        auto core=logging::core::get();
+        core->remove_all_sinks();
+        
+        if(logtype== LoggingType::Default){ //default:console
+            core->add_sink(console_sink);
+        }
+        if(logtype==LoggingType::File){ //file only
+            core->add_sink(file_sink);
+        }
+        if(logtype==LoggingType::Both){ //Both
+            core->add_sink(console_sink);
+            core->add_sink(file_sink);
+        }
+    }
 
 
 
@@ -418,7 +454,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     void Node::start_election_timer(){
         auto timeout=std::chrono::milliseconds(generate_random_timeout_ms());
-        std::cerr<<"Election timeout set to: "<<timeout<<"\n";
+        BOOST_LOG_TRIVIAL(info)<<"Election timeout set to: "<<timeout<<"\n";
 
         election_timer.expires_after(timeout);
 
@@ -427,10 +463,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         auto self=shared_from_this();
         election_timer.async_wait([self](boost::system::error_code ec){
             if(!ec){
-                std::cerr<<"Election timer expired so starting Election\n";
+                BOOST_LOG_TRIVIAL(trace)<<"Election timer expired so starting Election\n";
                 self->start_Election();
             }else if(ec==boost::asio::error::operation_aborted){
-                std::cerr<<"Election timer reset\n";
+                BOOST_LOG_TRIVIAL(trace)<<"Election timer reset\n";
             }
         });
 
@@ -479,7 +515,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
     void Node::start_Election(){
         
         if(this->isLeader ){
-            std::cerr<<"already a leader, No election needed\n";
+            BOOST_LOG_TRIVIAL(debug)<<"already a leader, No election needed\n";
             return ;
         }
 
@@ -502,7 +538,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                     this->check_Election_result(ElectionTimeout);
         });  
         
-        std::cerr<<"Election ended\n";
+        BOOST_LOG_TRIVIAL(info)<<"Election ended\n";
     }
 
     void Node::check_Election_result(const boost::system::error_code& ElectionTimeout){
@@ -517,16 +553,16 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
             return; 
         }
         if (this->isCandidate && this->candidates.size() > (Peers.size() + 1) / 2) {
-            std::cerr << "Election won! Becoming the leader." << std::endl;
+            BOOST_LOG_TRIVIAL(trace) << "Election won! Becoming the leader." << std::endl;
             this->isLeader = true;
             this->isCandidate = false;
             election_timer.cancel();
             Leaderfunc();
         } 
         else {
-        std::cerr << "Election timed out. Starting a new election." << std::endl;
-        // Start a new election with a new term
-        this->start_Election();
+            BOOST_LOG_TRIVIAL(info) << "Election timed out. Starting a new election." << std::endl;
+            // Start a new election with a new term
+            this->start_Election();
         }
     }
 
@@ -549,10 +585,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         auto self=shared_from_this();
         Heartbeat_timer.async_wait([self](boost::system::error_code ec){
             if(!ec){
-                std::cerr<<"Heartbeat timer expired so starting Election\n";
+                BOOST_LOG_TRIVIAL(info)<<"Heartbeat timer expired so starting Election\n";
                 self->Leaderfunc();
             }else if(ec==boost::asio::error::operation_aborted){
-                std::cerr<<"Heartbeat timer reset? i think this shouldn't happen\n";
+                BOOST_LOG_TRIVIAL(warning)<<"Heartbeat timer reset? i think this shouldn't happen\n";
             }
         });
 
@@ -634,7 +670,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
 
     std::map<std::string,Logstruct> Node::RestoreState(){
         if(LogStream && LogStream.is_open()){
-            std::cerr<<"Started restoring state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Started restoring state\n";
 
             std::string Stringbuf;
             std::map<std::string,Logstruct> Log;
@@ -673,23 +709,23 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                     key=Stringbuf.substr(key_start,key_end-key_start);
 
                     Log.erase(key);
-                    std::cerr<<"successfully deleted item"<<key<<"\n";
+                    BOOST_LOG_TRIVIAL(trace)<<"successfully deleted item"<<key<<"\n";
                 }
                 
 
             }
 
-            std::cerr<<"Succesfully was able to Restore state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Succesfully was able to Restore state\n";
             return Log;
         }
 
-        std::cerr<<"Critical Error: failed to open Log\n";
+        BOOST_LOG_TRIVIAL(fatal)<<"Critical Error: failed to open Log\n";
         return {};
     }
 
     bool Node::AddtoLog(bool Write,std::string& key,std::string& value, int& term){ //1 for W and 0 for Delete
         if(LogStream && LogStream.is_open()){
-            std::cerr<<"Started Persisting state\n";
+            BOOST_LOG_TRIVIAL(info)<<"Started Persisting state\n";
             std::string Stringbuf;
             if(Write){
                 LogStream<<"op=append,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
@@ -698,10 +734,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
                 LogStream<<"op=delete,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
             }
 
-            std::cerr<<"Success\n";
+            BOOST_LOG_TRIVIAL(info)<<"Success\n";
             return 1;
         }
-        std::cerr<<"Failed to write\n";
+        BOOST_LOG_TRIVIAL(fatal)<<"Failed to write\n";
         return 0;
     }
 

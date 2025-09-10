@@ -3,16 +3,19 @@
 #include<boost/asio.hpp>
 #include"ClientSession.hpp"
 #include<random>
-#include<thread>
 #include<fstream>
 #include<chrono>
 #include<map>
+#include<boost/log/core.hpp>
 #include<boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include<boost/system/error_code.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
 #include<boost/log/utility/setup/console.hpp>
+#include <boost/log/sinks/text_ostream_backend.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include<format>
+#include"Types.h"
 
 using namespace boost::asio::ip;
 using Socket = tcp::socket;
@@ -104,6 +107,9 @@ public:
     std::string severityColor(boost::log::trivial::severity_level level);
 
     void initLogging();
+
+    void ChangeLoggingTo(LoggingType LogType);
+
 
     //--------------------------------------------------------------------------------------------------------------------------
     //-----------------------Creating stuff for the Node 
