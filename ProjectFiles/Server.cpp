@@ -20,7 +20,6 @@ int main(int argc ,char *argv[]){
     if(argc<2){ //no port was given
         port=base_port;    
         BOOST_LOG_TRIVIAL(warning)<<"no arguments were given\n";
-        BOOST_LOG_TRIVIAL(warning)<<"no arguments were given\n";
     }
     else{
         for(int i=1;i<argc;i++){
