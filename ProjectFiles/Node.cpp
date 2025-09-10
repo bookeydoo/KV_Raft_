@@ -13,10 +13,13 @@ using namespace boost::asio::ip;
 using Socket = tcp::socket;
 
 
+namespace logging = boost::log;
+namespace sinks   = boost::log::sinks;
+namespace expr    = boost::log::expressions;
 
 int base_port = 4900;
 
-bool FileFlag=false;
+
 
 
 
@@ -40,59 +43,54 @@ const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{
 } 
     
     
-void Node::Start_Server(bool fileflag){
-    
-    FileFlag=fileflag;
-    
-    if(FileFlag){
-        try{   
+void Node::Start_Server(){
+    try{   
+        BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
+        
+        //if couldnt load Config properly we quit
+        if(!ConfigLoad()){
+            return;
+        }
 
-            BOOST_LOG_TRIVIAL(info)<<"Starting server on port: "<<port<<"\n";
-            
-            //if couldnt load Config properly we quit
-            if(!ConfigLoad()){
-                return;
-            }
+        std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
+        
+        std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
+        
 
-            std::vector<tcp::endpoint>Endpoints=CreateEndpoints();
-            
-            std::vector<std::shared_ptr<Socket>> Sockets= CreateSockets(this->IO_ctx);
-            
+        for(size_t i=0;i<Endpoints.size();i++){
 
-            for(size_t i=0;i<Endpoints.size();i++){
+            if(Endpoints[i].port() == port) continue;
+            auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
+            Peers.emplace_back(peer);
+            Connect_Peer(peer);
+        }
+        
 
-                if(Endpoints[i].port() == port) continue;
-                auto peer=std::make_shared<Peer>(Sockets[i],Endpoints[i]);
-                Peers.emplace_back(peer);
-                Connect_Peer(peer);
-            }
-            
+        //acceptor acts like a server socket from java
+        //for each node(port) we are listening to we need to create a unique acceptor
+        //on each unique acceptor object , we run async accept and io_ctx manages them
 
-            //acceptor acts like a server socket from java
-            //for each node(port) we are listening to we need to create a unique acceptor
-            //on each unique acceptor object , we run async accept and io_ctx manages them
+        auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
+        
 
-            auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
-            
+        
+        
 
-            
-            
+        auto NodeEndpoint=CreateEndpoint(port);
+        acceptor.open(NodeEndpoint.protocol());
+        acceptor.set_option(boost::asio::socket_base::reuse_address(true));
+        acceptor.bind(NodeEndpoint);
+        acceptor.listen();
 
-            auto NodeEndpoint=CreateEndpoint(port);
-            acceptor.open(NodeEndpoint.protocol());
-            acceptor.set_option(boost::asio::socket_base::reuse_address(true));
-            acceptor.bind(NodeEndpoint);
-            acceptor.listen();
-
-            do_accept();
+        do_accept();
 
             BOOST_LOG_TRIVIAL(info)<<"Listening on "<<acceptor.local_endpoint()<<"\n";
             
             start_election_timer();
 
-            ConnectToApi(apiAcceptor);
-            
+        ConnectToApi(apiAcceptor);
+        
 
         }
         catch(const boost::system::system_error& e)
@@ -102,6 +100,8 @@ void Node::Start_Server(bool fileflag){
     }
 
 }
+
+
 
 
 bool Node::ConfigLoad(){
@@ -320,13 +320,23 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
         }
     }
 
+    
+    boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> console_sink;
+    boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> file_sink;
 
    void Node::initLogging() {
-    namespace logging = boost::log;
+  
 
-    auto sink = logging::add_console_log();
+    
 
-    sink->set_formatter([this](const boost::log::record_view& rec,
+    logging::add_common_attributes();
+
+    //console sink
+    auto backend_console=boost::make_shared<sinks::text_ostream_backend>();
+    backend_console->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+    console_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_console);
+
+    console_sink->set_formatter([this](const boost::log::record_view& rec,
                            boost::log::formatting_ostream& strm) {
         auto lvl = rec[boost::log::trivial::severity];
         std::string color = severityColor(lvl.get());  // call static method
@@ -336,8 +346,31 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
              << "\033[0m"; // reset
     });
 
-    logging::add_common_attributes();
+    //file sink
+    auto backend_file=boost::make_shared<sinks::text_ostream_backend>();
+    backend_file->add_stream(boost::make_shared<std::ofstream>("mylog.log"));
+    file_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_file);
+
+    ChangeLoggingTo(LoggingType::Default); //default 
 }
+
+
+    void Node::ChangeLoggingTo(LoggingType logtype){
+
+        auto core=logging::core::get();
+        core->remove_all_sinks();
+        
+        if(logtype== LoggingType::Default){ //default:console
+            core->add_sink(console_sink);
+        }
+        if(logtype==LoggingType::File){ //file only
+            core->add_sink(file_sink);
+        }
+        if(logtype==LoggingType::Both){ //Both
+            core->add_sink(console_sink);
+            core->add_sink(file_sink);
+        }
+    }
 
 
 

@@ -1,4 +1,4 @@
-
+#include"Types.h"
 #include<iostream>
 #include"Node.hpp"
 #include<boost/asio.hpp>
@@ -15,10 +15,11 @@ int main(int argc ,char *argv[]){
     
     int port=0; 
     bool Leaderflag=false;
-    bool Fileflag=false;
+    LoggingType LogType =LoggingType::Default;
 
     if(argc<2){ //no port was given
         port=base_port;    
+        BOOST_LOG_TRIVIAL(warning)<<"no arguments were given\n";
         BOOST_LOG_TRIVIAL(warning)<<"no arguments were given\n";
     }
     else{
@@ -29,15 +30,21 @@ int main(int argc ,char *argv[]){
             if(arg =="-L"){
                 Leaderflag=true;
                 BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
+                BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
             }else{                
                 int val=atoi(argv[i]);
                 port=val;
             }
             //stands for file for putting the logs in a file instead of terminal
             if(arg=="-f" || arg=="-F") {
-                Fileflag=true;
+                LogType=LoggingType::File; //only write to files
                 BOOST_LOG_TRIVIAL(info)<<"Logs will go to Node ip.txt \n";
+            }else if(arg=="-b"|| arg=="-B"){
+                LogType=LoggingType::Both; //write to both Logs and console
+                BOOST_LOG_TRIVIAL(info)<<"Logs will go to files and console\n";
             }
+
+            
         }    
         
     }
@@ -58,7 +65,19 @@ int main(int argc ,char *argv[]){
     
     Server->Start_Server();
 
-
+    switch(LogType) {
+            case LoggingType::Default:
+                Server->ChangeLoggingTo(LogType);
+                break;
+            case LoggingType::File:
+                // handle file-only logging
+                Server->ChangeLoggingTo(LogType);
+                break;
+            case LoggingType::Both:
+                // handle both file and console logging
+                Server->ChangeLoggingTo(LogType);
+                break;
+    }
     
     for(size_t i=0;i<2;i++){
         Threads.emplace_back([&]{
