@@ -62,7 +62,7 @@ private:
     boost::asio::steady_timer election_timer;
     boost::asio::steady_timer Heartbeat_timer;
     std::vector<std::shared_ptr<ClientSession>> Sessions;  //internally have sockets (non copyable) 
-    boost::log::sources::channel_logger<> updatelogger{boost::log::keywords::channel="updates"};
+    boost::log::sources::channel_logger<> updatelogger{boost::log::keywords::channel= std::string("updates")};
     //for random timeouts
     std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> dist{150,300};

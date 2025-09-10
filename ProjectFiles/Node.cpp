@@ -12,6 +12,7 @@
 using namespace boost::asio::ip;
 using Socket = tcp::socket;
 
+BOOST_LOG_ATTRIBUTE_KEYWORD(channel_attr, "Channel", std::string)
 
 namespace logging = boost::log;
 namespace sinks   = boost::log::sinks;
@@ -26,16 +27,7 @@ int base_port = 4900;
 Node::Node(boost::asio::io_context& ctx,int Port)
                 :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx)
                 ,acceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx,tcp::endpoint(tcp::v4(),port+100)))
-                {
-                        std::stringstream filename;
-                        filename<<port<<".txt";
-                        LogStream=std::fstream(filename.str(),std::ios::out | std::ios::in| std::ios::app);
-                        
-                        if(!LogStream.is_open()){
-                            BOOST_LOG_TRIVIAL(error)<<"Couldn't Open file or Create \n";
-                        }
-
-                }
+                {}
 
 //this is used to access the endpoints of the node sessions (non api)
 const std::vector<std::shared_ptr<ClientSession>>& Node::getSessions() const{ 
@@ -321,10 +313,7 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
     boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> console_sink;
     boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>> file_sink;
 
-   void Node::initLogging() {
-  
-
-    
+void Node::initLogging() {
 
     logging::add_common_attributes();
 
@@ -343,19 +332,52 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
              << "\033[0m"; // reset
     });
 
-    //file sink
-    auto backend_file=boost::make_shared<sinks::text_ostream_backend>();
-    backend_file->add_stream(boost::make_shared<std::ofstream>("mylog.log"));
-    file_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_file);
+    
+    // creating file with port as name for both file sinks
+    std::stringstream filename;
+    filename<<port<<".log";
 
+    auto file=boost::make_shared<std::ofstream>(filename.str());
+
+    if(!file->is_open())
+        BOOST_LOG_TRIVIAL(fatal)<<"Failed to open log file:"<<filename.str()<<"\n";
+
+
+    //file sink for all logs not saving state
+    auto backend_updates=boost::make_shared<sinks::text_ostream_backend>();
+    backend_updates->add_stream(file);
+    backend_updates->auto_flush(true); //debugging
+
+
+    file_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_updates);
+
+    //-----------------------------------------
+    //file sink for saving state
+    //-----------------------------------------
+    
+    
+    auto updates_sink=boost::make_shared<sinks::synchronous_sink<sinks::text_ostream_backend>>(backend_updates);
+    updates_sink->set_filter(channel_attr == "updates");
+    updates_sink->set_formatter([](const boost::log::record_view& rec,boost::log::formatting_ostream& strm) {
+    
+        if(auto msg=rec[boost::log::expressions::smessage]){
+            strm<<msg.get();
+        }
+    });
+    logging::core::get()->add_sink(updates_sink);
+
+
+    //initalize the default sink
     ChangeLoggingTo(LoggingType::Default); //default 
+
 }
 
 
     void Node::ChangeLoggingTo(LoggingType logtype){
 
         auto core=logging::core::get();
-        core->remove_all_sinks();
+        core->remove_sink(console_sink);
+        core->remove_sink(file_sink);
         
         if(logtype== LoggingType::Default){ //default:console
             core->add_sink(console_sink);
@@ -722,10 +744,10 @@ void Node::BroadcastMsg(const std::string &Msg,const std::vector<std::shared_ptr
             BOOST_LOG_TRIVIAL(info)<<"Started Persisting state\n";
             std::string Stringbuf;
             if(Write){
-                LogStream<<"op=append,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
+                 BOOST_LOG(updatelogger) <<"op=append,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
             }
             if(!Write){
-                LogStream<<"op=delete,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
+                 BOOST_LOG(updatelogger) <<"op=delete,key:\""<<key<<"\",value:\""<<value<<"\",term:"<<term<<"\n";
             }
 
             BOOST_LOG_TRIVIAL(trace)<<"Success\n";

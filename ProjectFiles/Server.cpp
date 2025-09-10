@@ -29,7 +29,6 @@ int main(int argc ,char *argv[]){
             if(arg =="-L"){
                 Leaderflag=true;
                 BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
-                BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
             }else{                
                 int val=atoi(argv[i]);
                 port=val;
