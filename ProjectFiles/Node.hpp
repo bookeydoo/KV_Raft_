@@ -25,7 +25,6 @@ class ClientSession;
 
 
 extern int base_port ;
-extern bool FileFlag;
 
 struct Candidate{
      int port;
@@ -85,7 +84,7 @@ public:
     
 
     
-    void Start_Server(bool fileflag);
+    void Start_Server();
     bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
     
     void do_accept();
