@@ -56,7 +56,7 @@ int main(int argc ,char *argv[]){
     Server->isFollower=false;
     }
     
-    Server->Start_Server();
+    Server->Start_Server(Leaderflag);
 
 
     
