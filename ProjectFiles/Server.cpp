@@ -77,11 +77,9 @@ int main(int argc ,char *argv[]){
                 break;
     }
     
-    for(size_t i=0;i<2;i++){
-        Threads.emplace_back([&]{
-            IO_ctx.run();
-        });
-    }
+    
+    Server.get()->IO_ctx.run();
+     
 
 
     for(auto& t:Threads) t.join();

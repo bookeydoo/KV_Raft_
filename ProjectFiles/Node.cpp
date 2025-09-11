@@ -179,6 +179,18 @@ bool Node::ConfigLoad(){
     return true;
 }
 
+void Node::restartNode(){
+    BOOST_LOG_TRIVIAL(info)<<"Restarting node.....\n";
+
+    IO_ctx.stop();
+
+    IO_ctx.restart();
+    IO_ctx.run();
+
+    BOOST_LOG_TRIVIAL(info)<<"Node Succesfully restarted\n";
+
+}
+
     
 void Node::do_accept_peers(){
 
@@ -534,6 +546,7 @@ void Node::initLogging() {
         election_timer.cancel();
         start_election_timer();
     }
+
 
 
     //-----------------------------------------------------------------------------------------------------------------------

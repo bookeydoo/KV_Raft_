@@ -59,7 +59,6 @@ private:
     std::shared_ptr<tcp::acceptor> apiAcceptor;
     std::vector<std::shared_ptr<Peer>> Peers; 
     std::vector<Candidate> candidates;
-    boost::asio::io_context &IO_ctx;    
     boost::asio::steady_timer election_timer;
     boost::asio::steady_timer Heartbeat_timer;
     std::vector<std::shared_ptr<ClientSession>> Sessions;  //internally have sockets (non copyable) 
@@ -77,6 +76,7 @@ public:
     bool isFollower=true;
     bool isCandidate=false;
     tcp::endpoint Curr_leader;
+    boost::asio::io_context &IO_ctx;    
     std::map<std::string,Logstruct> Log;
     std::vector<std::pair<std::string,std::string>> Config_EP;
     
