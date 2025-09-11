@@ -255,7 +255,12 @@ void ApiSession::process_Req(const std::string &method,
                 }
             }
         }
-    } else if (method == "GET" && path.rfind("/kv", 0) == 0) {
+    }
+    else if(method=="POST" && path.rfind("/admin/restart")){
+        BOOST_LOG_TRIVIAL(info)<<"Restart Requested via API\n";
+        parent->restartNode();
+    }
+    else if (method == "GET" && path.rfind("/kv", 0) == 0) {
         auto query_pos = path.find('?');
         if (query_pos != std::string::npos) {
             std::string query = path.substr(query_pos + 1);
