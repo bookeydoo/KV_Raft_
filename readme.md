@@ -55,10 +55,10 @@ If you run the program without an ip , it will initalize to base_port 4900 but w
 Structure of Config.txt:
 
 ```
-Ip="127.0.0.1",port="4900"
-Ip="127.0.0.1",port="9001"
-Ip="127.0.0.1",port="9002"
-Ip="127.0.0.1",port="9003"
+Ip="127.0.0.1",port="4900",Api="5000"
+Ip="127.0.0.1",port="9001",Api="9006"
+Ip="127.0.0.1",port="9002",Api="9007"
+Ip="127.0.0.1",port="9003",Api="9008"
 ````
 
 Also added Leader flag for testing: -L (WIP)
@@ -76,5 +76,3 @@ To use the http api , you curl a request like the following :
 - HOT config reload to add/remove peers dynamically
 - when a new node joins, keys/snapshots get redistributed
 
-### TODO 
-- Modify Config.txt parsing to parse a port for the apiSession acceptor .
