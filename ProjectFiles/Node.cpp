@@ -26,7 +26,7 @@ int base_port = 4900;
 
 Node::Node(boost::asio::io_context& ctx,int Port)
                 :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx)
-                ,acceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx,tcp::endpoint(tcp::v4(),port+100)))
+                ,Nodeacceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx,tcp::endpoint(tcp::v4(),port+100)))
                 {}
 
 //this is used to access the endpoints of the node sessions (non api)
@@ -68,18 +68,27 @@ void Node::Start_Server(){
         BOOST_LOG_TRIVIAL(info)<<"Started Node on Port "<<port<<" at "<<std::ctime(&now)<<"\n";
         
 
+        //-------------------------------------------------------
+        //Initalizing the Acceptors
+        //-------------------------------------------------------
         
-        
-
         auto NodeEndpoint=CreateEndpoint(port);
-        acceptor.open(NodeEndpoint.protocol());
-        acceptor.set_option(boost::asio::socket_base::reuse_address(true));
-        acceptor.bind(NodeEndpoint);
-        acceptor.listen();
+        Nodeacceptor.open(NodeEndpoint.protocol());
+        Nodeacceptor.set_option(boost::asio::socket_base::reuse_address(true));
+        Nodeacceptor.bind(NodeEndpoint);
+        Nodeacceptor.listen();
 
-        do_accept();
+        auto ApiEndpoint=CreateEndpoint(ApiPort);
+        apiAcceptor->open(ApiEndpoint.protocol());
+        apiAcceptor->set_option(boost::asio::socket_base::reuse_address(true));
+        apiAcceptor->bind(ApiEndpoint);
+        apiAcceptor->listen();
+        
 
-            BOOST_LOG_TRIVIAL(info)<<"Listening on "<<acceptor.local_endpoint()<<"\n";
+        do_accept_peers();
+        do_accept_Api();
+
+            BOOST_LOG_TRIVIAL(info)<<"Listening on "<<Nodeacceptor.local_endpoint()<<"\n";
             
             start_election_timer();
 
@@ -100,8 +109,8 @@ bool Node::ConfigLoad(){
 
     
     /*Config for the config should be like :
-    Ip="",port=""
-    Ip="",port=""
+    Ip="",port="",Api=""
+    Ip="",port="",Api=""
     */
 
 
@@ -117,7 +126,7 @@ bool Node::ConfigLoad(){
     while (std::getline(ConfigStream, Line)) {
         if (Line.empty()) continue; // skip blank lines
 
-        std::string ip, Port;
+        std::string ip, Port,Api;
         std::stringstream ss(Line);
         std::string token;
 
@@ -125,27 +134,34 @@ bool Node::ConfigLoad(){
             auto pos = token.find('=');
             if (pos == std::string::npos) continue;
 
+            std::string key = token.substr(0, pos);
             std::string value = token.substr(pos + 1);
+            
+            //trim
+               value.erase(0, value.find_first_not_of(" \t\""));
+                value.erase(value.find_last_not_of(" \t\"") + 1);
+                key.erase(0, key.find_first_not_of(" \t\""));
+                key.erase(key.find_last_not_of(" \t\"") + 1);
 
-            // strip surrounding whitespace
-            value.erase(0, value.find_first_not_of(" \t"));
-            value.erase(value.find_last_not_of(" \t") + 1);
-
-            // remove quotes
-            if (!value.empty() && value.front() == '"') value.erase(0, 1);
-            if (!value.empty() && value.back() == '"') value.pop_back();
-
-            if (token.find("Ip") != std::string::npos) {
+            if (token.find("Ip") != std::string::npos) 
                 ip = value;
-            } else if (token.find("port") != std::string::npos) {
+            else if (token.find("port") != std::string::npos) 
                 Port = value;
-            }
+            else if(token.find("Api")!= std::string::npos)
+                Api=value;
+            
         }
 
-        
+
             //skip our node if found
             //In a proper build that works on actual servers it should check the ip addr but since i am testing on local np
-        if(std::stoi(Port) == port)  continue; 
+        if(std::stoi(Port) == port){
+
+            if(ApiPort==0 && !Api.empty()){
+                ApiPort=std::stoi(Api);
+            }
+            continue;
+        }   
 
         if (!ip.empty() && !Port.empty()) {
             auto candidate=std::make_pair(ip,Port);
@@ -164,11 +180,11 @@ bool Node::ConfigLoad(){
 }
 
     
-void Node::do_accept(){
+void Node::do_accept_peers(){
 
         auto self =shared_from_this();
 
-        acceptor.async_accept(
+        Nodeacceptor.async_accept(
             [self](const boost::system::error_code ec, Socket peer_socket ){
                 
                 if(!ec) {
@@ -192,11 +208,42 @@ void Node::do_accept(){
                     BOOST_LOG_TRIVIAL(error)<<"Accept error: "<<ec.what()<<"\n";
                 }
                 // To continue listening, restart the async_accept operation.
-                self->do_accept();
+                self->do_accept_peers();
             }
         );
-    }
 
+}
+
+void Node::do_accept_Api(){
+        auto self =shared_from_this();
+        
+        apiAcceptor->async_accept([self](const boost::system::error_code ec, Socket Api_socket ){
+                
+                    if(!ec) {
+
+                    
+                        auto now=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());                
+                        BOOST_LOG_TRIVIAL(info)<<"Accepted Api connection on port "
+                                    <<Api_socket.remote_endpoint().port()
+                                    <<" at "<<std::ctime(&now)<<"\n";
+
+
+                        auto Shared_socket=std::make_shared<Socket>(std::move(Api_socket));
+                        auto buf=std::make_shared<boost::asio::streambuf>();
+                        //Create Api Session
+                        auto Session=std::make_shared<ApiSession>(Shared_socket,buf,self);
+                        self->apiSession=Session;
+
+                        Session->Handle_Req();
+                    }
+                    else {
+                        BOOST_LOG_TRIVIAL(error)<<"Accept error: "<<ec.what()<<"\n";
+                    }
+                    // To continue listening, restart the async_accept operation.
+                    self->do_accept_Api();
+                }
+            );
+}
 void Node::Connect_Peer(std::shared_ptr<Peer> peer){
         peer->socket->close();
 
@@ -369,8 +416,8 @@ void Node::initLogging() {
     logging::core::get()->add_sink(updates_sink);
 
 
-    //initalize the default sink
-    ChangeLoggingTo(LoggingType::Default); //default 
+    //initalize the default sink (changed for debugging to both might change to another file sink instead)
+    ChangeLoggingTo(LoggingType::Both); //starts with both sinks just in case
 
 }
 

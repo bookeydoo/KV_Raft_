@@ -54,7 +54,8 @@ class Node : public std::enable_shared_from_this<Node>{
 private:
     std::fstream LogStream;
     std::fstream ConfigStream;
-    tcp::acceptor acceptor;  //non copyable , wont build if emplaced directly in a vec 
+    tcp::acceptor Nodeacceptor;  //non copyable , wont build if emplaced directly in a vec 
+    std::shared_ptr<ApiSession> apiSession;
     std::shared_ptr<tcp::acceptor> apiAcceptor;
     std::vector<std::shared_ptr<Peer>> Peers; 
     std::vector<Candidate> candidates;
@@ -70,6 +71,7 @@ private:
 
 public:
     int port;
+    int ApiPort;
     int Curr_Term=0;
     bool isLeader=false;
     bool isFollower=true;
@@ -89,7 +91,8 @@ public:
     void Start_Server();
     bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
     
-    void do_accept();
+    void do_accept_peers();
+    void do_accept_Api();
 
     void Connect_Peer(std::shared_ptr<Peer> peer);
     

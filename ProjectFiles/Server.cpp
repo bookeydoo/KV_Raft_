@@ -65,15 +65,15 @@ int main(int argc ,char *argv[]){
 
     switch(LogType) {
             case LoggingType::Default:
-                Server->ChangeLoggingTo(LogType);
+                Server->ChangeLoggingTo(LoggingType::Default);
                 break;
             case LoggingType::File:
                 // handle file-only logging
-                Server->ChangeLoggingTo(LogType);
+                Server->ChangeLoggingTo(LoggingType::File);
                 break;
             case LoggingType::Both:
                 // handle both file and console logging
-                Server->ChangeLoggingTo(LogType);
+                Server->ChangeLoggingTo(LoggingType::Both);
                 break;
     }
     
