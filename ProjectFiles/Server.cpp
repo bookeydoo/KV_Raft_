@@ -77,12 +77,11 @@ int main(int argc ,char *argv[]){
                 break;
     }
     
-    
+
     Server.get()->IO_ctx.run();
      
 
 
-    for(auto& t:Threads) t.join();
 
 
     return 0;
