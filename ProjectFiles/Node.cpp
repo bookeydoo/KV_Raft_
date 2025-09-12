@@ -26,7 +26,7 @@ int base_port = 4900;
 
 Node::Node(boost::asio::io_context& ctx,int Port)
                 :IO_ctx(ctx),port(Port),election_timer(ctx),Heartbeat_timer(ctx)
-                ,Nodeacceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx,tcp::endpoint(tcp::v4(),port+100)))
+                ,Nodeacceptor(ctx),apiAcceptor(std::make_shared<tcp::acceptor>(ctx))
                 {}
 
 //this is used to access the endpoints of the node sessions (non api)
@@ -92,7 +92,7 @@ void Node::Start_Server(){
             
             start_election_timer();
 
-        ConnectToApi(apiAcceptor);
+        // ConnectToApi(apiAcceptor); //debug
         
 
         }
@@ -279,10 +279,12 @@ void Node::Connect_Peer(std::shared_ptr<Peer> peer){
                     peer->socket->get_executor()
                 );
                 timer->expires_after(std::chrono::seconds(2));
-                timer->async_wait([this,&peer,timer](auto){
+
+                auto self =shared_from_this();
+                timer->async_wait([self,peer,timer](auto){
                     //debug
                     BOOST_LOG_TRIVIAL(trace)<<"attempting connection"<<"\n";
-                    Connect_Peer(peer);
+                    self->Connect_Peer(peer);
                 });
              }
         });
@@ -495,23 +497,23 @@ void Node::initLogging() {
     }
 
 
-    void Node::ConnectToApi(std::shared_ptr<tcp::acceptor> acceptor){
+    // void Node::ConnectToApi(std::shared_ptr<tcp::acceptor> acceptor){
 
-        auto socket = std::make_shared<Socket>(IO_ctx);
-        auto self = shared_from_this();
+    //     auto socket = std::make_shared<Socket>(IO_ctx);
+    //     auto self = shared_from_this();
 
-        acceptor->async_accept(*socket,
-        [self,acceptor,socket,this](const boost::system::error_code& ec){
+    //     acceptor->async_accept(*socket,
+    //     [self,acceptor,socket,this](const boost::system::error_code& ec){
 
-            if(!ec){
-                auto buffer=std::make_shared<boost::asio::streambuf>();
-                auto api_session=std::make_shared<ApiSession>(socket,buffer,self);
+    //         if(!ec){
+    //             auto buffer=std::make_shared<boost::asio::streambuf>();
+    //             auto api_session=std::make_shared<ApiSession>(socket,buffer,self);
 
-                api_session->start(self->isLeader);
-            }
-            ConnectToApi(acceptor);
-        });
-    }
+    //             api_session->start(self->isLeader);
+    //         }
+    //         ConnectToApi(acceptor);
+    //     });
+    // }
     
 
 

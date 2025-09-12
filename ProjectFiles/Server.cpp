@@ -29,19 +29,21 @@ int main(int argc ,char *argv[]){
             if(arg =="-L"){
                 Leaderflag=true;
                 BOOST_LOG_TRIVIAL(debug)<<"Starting this node as a Leader\n";
-            }else{                
-                int val=atoi(argv[i]);
-                port=val;
-            }
+                continue;
+            }                
+            
             //stands for file for putting the logs in a file instead of terminal
             if(arg=="-f" || arg=="-F") {
                 LogType=LoggingType::File; //only write to files
                 BOOST_LOG_TRIVIAL(info)<<"Logs will go to Node ip.txt \n";
-            }else if(arg=="-b"|| arg=="-B"){
+                continue;
+            }if(arg=="-b"|| arg=="-B"){
                 LogType=LoggingType::Both; //write to both Logs and console
                 BOOST_LOG_TRIVIAL(info)<<"Logs will go to files and console\n";
+                continue;
             }
-
+            
+            port=std::stoi(arg);
             
         }    
         

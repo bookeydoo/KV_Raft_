@@ -61,7 +61,7 @@ class Node;
                             parent->isFollower=true;
                             parent->isCandidate=false;
                             parent->isLeader=false;
-                            parent->Curr_leader=this->get_socket()->local_endpoint();
+                            parent->Curr_leader=this->get_socket()->remote_endpoint();
                         }
                         
                         
@@ -231,15 +231,26 @@ void ApiSession::process_Req(const std::string &method,
                                 const std::string &body) {
     auto parent = Parent_node.lock();
     if (!parent) return;
-
     if (method == "POST" && path == "/kv") {
         // parse body for key=value
         std::string key, value;
         size_t key_pos   = body.find("key=");
         size_t value_pos = body.find("value=");
+
         if (key_pos != std::string::npos && value_pos != std::string::npos) {
-            key = body.substr(key_pos + 4, body.find('&') - (key_pos + 4));
+            // look for '&' after "key="
+            size_t amp = body.find('&', key_pos + 4);
+            if (amp == std::string::npos) {
+                // no '&' → key runs until end of body
+                key = body.substr(key_pos + 4, value_pos - (key_pos + 4));
+            } else {
+                // '&' found → key ends there
+                key = body.substr(key_pos + 4, amp - (key_pos + 4));
+            }
+
+            // value always runs until end
             value = body.substr(value_pos + 6);
+            
             if (parent->isLeader) {
                 parent->Log.emplace(key, Logstruct(value, parent->Curr_Term));
                 std::string msg = std::format("AppendEntries key:{} value:{} term:{}",
@@ -256,7 +267,7 @@ void ApiSession::process_Req(const std::string &method,
             }
         }
     }
-    else if(method=="POST" && path.rfind("/admin/restart")){
+    else if(method=="POST" && path.rfind("/admin/restart",0) == 0 ){
         BOOST_LOG_TRIVIAL(info)<<"Restart Requested via API\n";
         parent->restartNode();
     }
