@@ -90,6 +90,7 @@ public:
     
     void Start_Server();
     bool ConfigLoad(); //used for Hot reloading and dynamically loading new sockets
+    std::string stripQuotes(const std::string& s);
     
     void do_accept_peers();
     void do_accept_Api();

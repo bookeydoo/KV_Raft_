@@ -92,7 +92,7 @@ void Node::Start_Server(){
             
             start_election_timer();
 
-        // ConnectToApi(apiAcceptor); //debug
+        // ConnectToApi(apiAcceptor);
         
 
         }
@@ -138,10 +138,17 @@ bool Node::ConfigLoad(){
             std::string value = token.substr(pos + 1);
             
             //trim
-               value.erase(0, value.find_first_not_of(" \t\""));
-                value.erase(value.find_last_not_of(" \t\"") + 1);
-                key.erase(0, key.find_first_not_of(" \t\""));
-                key.erase(key.find_last_not_of(" \t\"") + 1);
+            value.erase(0, value.find_first_not_of(" \t\""));
+            value.erase(value.find_last_not_of(" \t\"") + 1);
+
+            if(value.empty()){
+                BOOST_LOG_TRIVIAL(error)<<"Empty numeric value in config token "<<token;
+                continue;
+            }
+
+            key.erase(0, key.find_first_not_of(" \t\""));
+            key.erase(key.find_last_not_of(" \t\"") + 1);
+            
 
             if (token.find("Ip") != std::string::npos) 
                 ip = value;
@@ -153,12 +160,14 @@ bool Node::ConfigLoad(){
         }
 
 
-            //skip our node if found
-            //In a proper build that works on actual servers it should check the ip addr but since i am testing on local np
-        if(std::stoi(Port) == port){
+        //skip our node if found
+        //In a proper build that works on actual servers it should check the ip addr but since i am testing on local np
+
+        BOOST_LOG_TRIVIAL(debug)<<"Port="<<Port<<",Api="<<Api<<"\n";
+        if(!Port.empty() && std::stoi(stripQuotes(Port)) == port){
 
             if(ApiPort==0 && !Api.empty()){
-                ApiPort=std::stoi(Api);
+                ApiPort=std::stoi(stripQuotes(Api));
             }
             continue;
         }   
@@ -177,6 +186,13 @@ bool Node::ConfigLoad(){
     }
 
     return true;
+}
+
+std::string Node::stripQuotes(const std::string& s) {
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+        return s.substr(1, s.size() - 2);
+    }
+    return s;
 }
 
 void Node::restartNode(){

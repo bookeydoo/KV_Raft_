@@ -33,7 +33,7 @@ processArray=[]
 try:
     #Start the processes
     for element in array:
-        process=subprocess.Popen(["raft_server.exe",element,"-F"])
+        process=subprocess.Popen(["raft_server.exe","-F",element])
         processArray.append(process)
 
     #graceful shutdown
