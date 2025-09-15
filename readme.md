@@ -18,13 +18,13 @@ Boost asio and Boost log with all its dependices mentioned in build.rsp
 
 You can use g++ or clang with the build.rsp file I created  or  use make with the list of arguments in the build.rsp 
 
-Example of my building process on windows :
+### Example of my building process on windows :
 
 ```
 g++ @build.rsp 
 ```
 
-Example of build process with make:
+### Example of build process with make:
 ```
 CXX = g++
 CXXFLAGS = -I../include
@@ -44,6 +44,20 @@ myprog: $(OBJS)
 	$(CXX) -o ../bin/myprog $(OBJS) $(LDFLAGS) $(LIBS)
 
 ```
+
+### To build with docker:
+You get two options either with debug which comes with gdb but you have to include 
+--build-arg BUILD_TYPE=Debug in your build command like :
+```
+docker build -t raft_node_debug --build-arg BUILD_TYPE=Debug . 
+```
+
+or use the default docker build command:
+```
+docker build -t raft_node .
+```
+
+
 
 ## How to use?
 
