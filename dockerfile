@@ -1,7 +1,9 @@
+
+#-------------------This is the Debug container so its heavy-------------------#
 #-------------------Stage 1 : Build-------------------#
 
 #Ubuntu to ensure it works with gcc and boost
-FROM ubuntu:24.04 AS Builder
+FROM ubuntu:24.04-minimal AS Builder
 
 #install dependices
 RUN apt-get update && apt-get install -y \
@@ -12,17 +14,12 @@ RUN apt-get update && apt-get install -y \
 
 #create new folder
 WORKDIR /app
-COPY ./ProjectFiles /app/ 
+COPY ./ProjectFiles /app/ProjectFiles
+COPY ./CMakeLists.txt /app/
 
 #running my program (with debug symbols)
-RUN g++ -std=c++23 -Wall -pthread \
-    Server.cpp Node.cpp ClientSession.cpp \
-    -g -o raft_server \
-    -lboost_log -lboost_log_setup \
-    -lboost_thread -lboost_filesystem \
-    -lboost_date_time -lboost_regex\
-    -lboost_chrono -lboost_atomic \
-    -lboost_system -lpthread
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+RUN cmake --build build -- -j${nproc}
 
 
 CMD [ "./raft_server" ]
@@ -48,5 +45,5 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app 
 
 #copy the compiled binary
-COPY --from=Builder /app/raft_server /app/
+COPY --from=Builder /app/build/raft_server /app/
 
