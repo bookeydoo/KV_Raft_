@@ -36,11 +36,11 @@ ARG BUILD_TYPE=release
 
 #Installing only the runtime boost (not build tools!)
 RUN apt-get update && apt-get install -y --no-install-recommends\
-    libboost-log1.74.0 \
-    libboost-filesystem1.74.0 \
-    libboost-thread1.74.0 \
-    libboost-date-time1.74.0 \
-    libboost-regex1.74.0 \
+    libboost-log1.83.0 \
+    libboost-filesystem1.83.0 \
+    libboost-thread1.83.0 \
+    libboost-date-time1.83.0 \
+    libboost-regex1.83.0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if [${BUILD_TYPE}="Debug"]; then apt-get update && apt-get install -y gdb && rm -rf /var/lib/apt/lists/*; fi
