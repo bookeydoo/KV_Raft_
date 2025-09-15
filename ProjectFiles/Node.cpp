@@ -163,12 +163,13 @@ bool Node::ConfigLoad(){
         //skip our node if found
         //In a proper build that works on actual servers it should check the ip addr but since i am testing on local np
 
-        BOOST_LOG_TRIVIAL(debug)<<"Port="<<Port<<",Api="<<Api<<"\n";
+        BOOST_LOG_TRIVIAL(debug)<<"Before : Port="<<Port<<",Api="<<Api<<"\n";
         if(!Port.empty() && std::stoi(stripQuotes(Port)) == port){
 
             if(ApiPort==0 && !Api.empty()){
                 ApiPort=std::stoi(stripQuotes(Api));
             }
+            BOOST_LOG_TRIVIAL(debug)<<"After : Port="<<Port<<",Api="<<Api<<"\n";
             continue;
         }   
 
