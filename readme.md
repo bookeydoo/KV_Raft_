@@ -3,8 +3,8 @@
 
 
 ## Description
-This project is a simple implementation of the Raft consensus algorithm.
-It provides a distributed key-value store with :
+This project is a simple implementation of the Raft consensus algorithm,
+It provides a distributed key-value store with:
 - HTTP API for GET and POST to add to the network 
 - Persists state in case of Node failures(fault tolerance)
 - Leader Election between nodes
@@ -89,4 +89,9 @@ To use the http api , you curl a request like the following :
 - maybe attempt an LSM-tree style storage
 - HOT config reload to add/remove peers dynamically
 - when a new node joins, keys/snapshots get redistributed
+
+###TODO:
+-Github actions dockerfile build automation /serving 
+
+
 
