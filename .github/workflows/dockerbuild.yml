@@ -28,4 +28,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: waleedamgad/KV_RAFT:latest
+          tags: waleedamgad/kv_raft:latest
