@@ -1,0 +1,32 @@
+name: Build docker image
+
+on: 
+  push:
+    branches:
+      - main
+    pull_request:
+
+
+jobs:
+  docker:
+    runs-on: ubuntu:24.04
+
+
+    steps:
+      #checkout repo
+      -name:  checkout code
+      uses: actions/checkout@v4
+
+      #setup docker builds
+      -name: Setup docker build
+      uses: docker/setup-buildx-action@v3
+
+
+      # Build image (just build, no push)
+      -name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: my-app:latest
