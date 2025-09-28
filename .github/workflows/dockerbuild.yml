@@ -11,16 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Login to dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.Dockerhub_Username }}
+          password: ${{ secrets.Dockerhub_Password }}
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build and Push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: false
-          tags: my-app:latest
+          push: true
+          tags: waleedamgad/KV_RAFT:latest
