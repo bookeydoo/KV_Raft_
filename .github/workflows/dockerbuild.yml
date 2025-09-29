@@ -28,4 +28,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: waleedamgad/kv_raft:latest
+          tags: waleedamgad/kv_raft_debug:latest
+          build-args: |
+            BUILD_TYPE = Debug      #Release or debug
